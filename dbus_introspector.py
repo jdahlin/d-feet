@@ -1,6 +1,8 @@
 import dbus
 import dbus.mainloop.glib
 import gobject
+import _util
+import os
 
 SESSION_BUS = 1
 SYSTEM_BUS = 2
@@ -22,6 +24,8 @@ class BusService:
         self.unique_name = unique_name
         self.common_names = []
         self.bus = bus
+        self.process_id = None
+        self.process_path = None
 
     def add_name(self, name):
         if not (name in self.common_names):
@@ -33,8 +37,37 @@ class BusService:
         except:
             pass
 
+    def set_process_info(self, id, path):
+        self.process_id = id
+        self.process_path = path
+
     def __str__(self):
-        return '%s %s' % (self.unique_name, str(self.common_names))
+        result = self.unique_name
+        result += '\n    Process ID: '
+        if self.process_id:
+            result += str(self.process_id)
+        else:
+            result += 'Unknown'
+
+        result += '\n    Process Name: '
+        if self.process_path:
+            result += os.path.basename(self.process_path[0])
+        else:
+            result += 'Unknown'
+
+        result += '\n    Well Known Name'
+        count = len(self.common_names)
+        if count == 0:
+            result += ': None'
+        elif count == 1:
+            result += ': '
+            result += self.common_names[0]
+        else:
+            result += 's: '
+            for name in self.common_names:
+                result += "\n        " + name
+
+        return result 
 
 class BusWatch(gobject.GObject):
     def __init__(self, bus, address=None):
@@ -53,13 +86,31 @@ class BusWatch(gobject.GObject):
                 raise BusAddressError(address)
 
         self.bus.add_signal_receiver(self.name_owner_changed_cb,
-                                    dbus_interface='org.freedesktop.DBus',
-                                    signal_name='NameOwnerChanged')
+                                     dbus_interface='org.freedesktop.DBus',
+                                     signal_name='NameOwnerChanged')
 
-        self.bus_object = self.bus.get_object('org.freedesktop.DBus', '/org/freedesktop/DBus')
-        self.bus_object.ListNames(dbus_interface='org.freedesktop.DBus',
-                                  reply_handler=self.list_names_handler,
-                                  error_handler=self.list_names_error_handler)
+        bus_object = self.bus.get_object('org.freedesktop.DBus', 
+                                         '/org/freedesktop/DBus')
+        self.bus_interface = dbus.Interface(bus_object, 
+                                            'org.freedesktop.DBus')
+
+        self.bus_interface.ListNames(reply_handler=self.list_names_handler,
+                                     error_handler=self.list_names_error_handler)
+
+    def get_unix_process_id_cb(self, name, id):
+        service = self.services[name]
+        process_path = _util.get_proc_from_pid(id)
+        service.set_process_info(id, process_path)
+
+    def get_unix_process_id_error_cb(self, name, error):
+        print error
+
+    # get the Unix process ID so we can associate the name
+    # with a process (this will only work under Unix like OS's)
+    def get_unix_process_id_async_helper(self, name):
+         self.bus_interface.GetConnectionUnixProcessID(name, 
+                reply_handler = lambda id: self.get_unix_process_id_cb(name, id),
+                error_handler = lambda error: self.get_unix_process_id_error_cb(name, error))
 
     # if name is not unique and owner is set add the name to the service
     # else create a new service
@@ -70,16 +121,13 @@ class BusWatch(gobject.GObject):
                 return
 
             self.services[name] = BusService(name, self.bus)
-        elif name == 'org.freedesktop.DBus':
-            # FIXME: this is a courner case which needs to be taken care of in other places too
-            if self.services.has_key(name):
-                return
-
-            self.services[name] = BusService(name, self.bus)
+            self.get_unix_process_id_async_helper(name)
 
         else:
             if not owner:
-                owner = self.bus_object.GetNameOwner(name)
+                owner = self.bus_interface.GetNameOwner(name)
+                if owner == 'org.freedesktop.DBus':
+                    return 
 
             # if owner still does not exist then we move on
             if not owner:
@@ -90,6 +138,7 @@ class BusWatch(gobject.GObject):
             else:
                 service = BusService(owner, self.bus)
                 self.services[owner] = service
+                self.get_unix_process_id_async_helper(owner)
 
             service.add_name(name)
 
@@ -123,10 +172,6 @@ class BusWatch(gobject.GObject):
     def list_names_handler(self, names):
         for name in names:
             self.add_service(name)
-            print "\n*************** ",name
-            for key in self.services.keys():
-                print str(key), ' = ', str(self.services[key])
-
 
     def list_names_error_handler(self, error):
         print "error getting service names - %s" % str(error)
