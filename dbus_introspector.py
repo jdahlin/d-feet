@@ -70,9 +70,20 @@ class BusService:
         return result 
 
 class BusWatch(gobject.GObject):
+    __gsignals__ = {
+        'service-added' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                           (gobject.TYPE_PYOBJECT,)),
+        'service-changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                             (gobject.TYPE_PYOBJECT,)),
+        'service-removed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                             (gobject.TYPE_PYOBJECT,))
+    }
+
     def __init__(self, bus, address=None):
         self.bus = None
         self.services = {}
+
+        super(BusWatch, self).__init__()
 
         if bus == SESSION_BUS:
             self.bus = dbus.SessionBus()
@@ -122,6 +133,7 @@ class BusWatch(gobject.GObject):
 
             self.services[name] = BusService(name, self.bus)
             self.get_unix_process_id_async_helper(name)
+            self.emit('service-added', self.services[name])
 
         else:
             if not owner:
@@ -139,12 +151,16 @@ class BusWatch(gobject.GObject):
                 service = BusService(owner, self.bus)
                 self.services[owner] = service
                 self.get_unix_process_id_async_helper(owner)
+                self.emit('service-added', self.services[owner])
+                
 
             service.add_name(name)
 
     def remove_service(self, name, owner=None):
         if self.services.has_key(name):
             self.services.del_key(name)
+            self.emit('service-removed', self.services[name])
+            
         else:
             if not owner:
                 return
@@ -175,3 +191,6 @@ class BusWatch(gobject.GObject):
 
     def list_names_error_handler(self, error):
         print "error getting service names - %s" % str(error)
+
+    def get_services(self):
+        return self.services
