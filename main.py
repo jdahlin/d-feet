@@ -10,21 +10,26 @@ def main(args):
     global session_bus_watch
     session_bus_watch = BusWatch(dbus_introspector.SESSION_BUS)
     main_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
+    main_window.set_size_request(300, 200)
+    main_window.connect('destroy',gtk.main_quit)
     session_services_view = _ui.ServiceView(session_bus_watch)
     session_services_view.show()
-    main_window.add(session_services_view)
+    scroll = gtk.ScrolledWindow()
+    scroll.add(session_services_view)
+    scroll.show()
+    main_window.add(scroll)
     main_window.show()
 
 def print_services():
     global session_bus_watch
     print '\n*************** '
-    for key in session_bus_watch.services.keys():
-        print str(session_bus_watch.services[key])
+    for s in session_bus_watch.service_list:
+        print str(s)
     print '\n'
 
     return True
 
 if __name__ == "__main__":
     main(sys.argv)
-    gobject.timeout_add(2000, print_services)
+    #gobject.timeout_add(2000, print_services)
     gtk.main()
