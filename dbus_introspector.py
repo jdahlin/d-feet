@@ -10,6 +10,14 @@ SYSTEM_BUS = 2
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
+def print_method(m):
+    def decorator(*args):
+        #print "call:", m,args
+        r = m(*args)
+        #print "return:", r
+        return r
+    return decorator
+
 class Error(Exception):
     pass
 
@@ -202,6 +210,7 @@ class BusWatch(gtk.GenericTreeModel):
             path = (self.service_list.index(service),)
             iter = self.get_iter(path)
             self.row_inserted(path, iter) 
+            self.row_has_child_toggled(path, iter)
 
         else:
             if not owner:
@@ -222,6 +231,8 @@ class BusWatch(gtk.GenericTreeModel):
                     path = (self.service_list.index(service),)
                     iter = self.get_iter(path)
                     self.row_inserted(path, iter)
+                    self.row_has_child_toggled(path, iter)
+
                 else:
                     service.set_common_name(name)
 
@@ -235,6 +246,8 @@ class BusWatch(gtk.GenericTreeModel):
                 path = (self.service_list.index(service),)
                 iter = self.get_iter(path)
                 self.row_inserted(path, iter)
+                self.row_has_child_toggled(path, iter)
+
                 self.emit('service-added', service)
                 
     def remove_service(self, name, owner=None):
@@ -303,6 +316,7 @@ class BusWatch(gtk.GenericTreeModel):
     def on_get_column_type(self, n):
         return self.COL_TYPES[n]
 
+    @print_method
     def on_get_iter(self, path):
         try:
             if len(path) == 1:
@@ -312,6 +326,7 @@ class BusWatch(gtk.GenericTreeModel):
         except IndexError:
             return None
 
+    @print_method
     def on_get_path(self, rowref):
         index = self.files.index(rowref[0])
         if len(rowref) == 1:
@@ -328,23 +343,30 @@ class BusWatch(gtk.GenericTreeModel):
         if column == self.SERVICE_OBJ_COL:
             return service
         elif column == self.UNIQUE_NAME_COL:
-            return service.get_unique_name()
-        elif column == self.COMMON_NAME_COL:
-            if service.is_public():
-                return service.get_common_name()
-            else:
+            if (child == 0):
                 return service.get_unique_name()
+        elif column == self.COMMON_NAME_COL:
+            if child == -1:
+                if service.is_public():
+                    return service.get_common_name()
+                else:
+                    return service.get_unique_name()
         elif column == self.IS_PUBLIC_COL:
             return service.is_public()
         elif column == self.PROCESS_ID_COL:
-            return service.get_process_id()
+            if child == 1:
+                return service.get_process_id()
         elif column == self.PROCESS_PATH_COL:
             return service.get_process_path()
         elif column == self.PROCESS_NAME_COL:
-            return service.get_process_name()
+            if child == 1:
+                return service.get_process_name()
         else:
             raise InvalidColumnError(column) 
 
+        return None
+
+    @print_method
     def on_iter_next(self, rowref):
         try:
             service = rowref[0]
@@ -352,26 +374,34 @@ class BusWatch(gtk.GenericTreeModel):
             if len(rowref) == 2:
                 child = rowref[1]
 
-            if child < 1:
+            if child == 0:
                 return (service, child +1)
+            elif child == 1:
+                return None
             else:
                 i = self.service_list.index(rowref[0]) + 1
                 return (self.service_list[i],)
         except IndexError:
             return None
 
+    @print_method
     def on_iter_children(self, parent):
         if parent:
-            return (parent, 0) 
+            if len(parent) == 1:
+                return (parent[0], 0) 
+            else:
+                return None
 
         return (self.service_list[0],)
 
+    @print_method
     def on_iter_has_child(self, rowref):
         if len(rowref) == 1:
             return True
         else:
             return False
 
+    @print_method
     def on_iter_n_children(self, rowref):
         if rowref:
             if len(rowref) == 1:
@@ -381,6 +411,7 @@ class BusWatch(gtk.GenericTreeModel):
 
         return len(self.service_list)
 
+    @print_method
     def on_iter_nth_child(self, parent, n):
         if parent:
             if n < 2:
@@ -388,10 +419,11 @@ class BusWatch(gtk.GenericTreeModel):
             else:
                 return None
         try:
-            return self.service_list[n]
+            return (self.service_list[n],)
         except IndexError:
             return None
 
+    @print_method
     def on_iter_parent(self, child):
         return (child[0],) 
 
