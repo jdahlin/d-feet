@@ -32,8 +32,8 @@ class InvalidColumnError(Error):
     def __init__(self, col):
         self.column = col
 
-        def __str__(self):
-            return repr('Column number \'%i\' requested but is not valid' % self.column)
+    def __str__(self):
+        return repr('Column number \'%i\' requested but is not valid' % self.column)
 
 class CommonServiceData:
     def __init__(self):
