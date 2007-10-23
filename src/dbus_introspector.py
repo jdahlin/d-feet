@@ -125,7 +125,7 @@ class BusWatch(gtk.GenericTreeModel):
                              (gobject.TYPE_STRING,))
     }
 
-    NUM_COL = 7
+    NUM_COL = 8 
 
     (SERVICE_OBJ_COL, 
      UNIQUE_NAME_COL,
@@ -133,7 +133,8 @@ class BusWatch(gtk.GenericTreeModel):
      IS_PUBLIC_COL,        # has a common name
      PROCESS_ID_COL,
      PROCESS_PATH_COL,
-     PROCESS_NAME_COL) = range(NUM_COL)
+     PROCESS_NAME_COL,
+     DISPLAY_COL) = range(NUM_COL)
 
     COL_TYPES = (gobject.TYPE_PYOBJECT,
                  gobject.TYPE_STRING,
@@ -141,6 +142,7 @@ class BusWatch(gtk.GenericTreeModel):
                  gobject.TYPE_BOOLEAN,
                  gobject.TYPE_STRING,
                  gobject.TYPE_PYOBJECT,
+                 gobject.TYPE_STRING,
                  gobject.TYPE_STRING)
 
     def __init__(self, bus, address=None):
@@ -334,33 +336,39 @@ class BusWatch(gtk.GenericTreeModel):
         else:
             return (index, rowref[1])
 
+    def _get_display_name(self, service):
+        if service.is_public():
+            return service.get_common_name()
+        else:
+            return service.get_unique_name()
+
     def on_get_value(self, rowref, column):
         service = rowref[0]
         child = -1
-        if len(rowref) == 2:
+        if len(rowref) > 1:
             child = rowref[1]
 
         if column == self.SERVICE_OBJ_COL:
             return service
         elif column == self.UNIQUE_NAME_COL:
-            if (child == 0):
-                return service.get_unique_name()
+            return service.get_unique_name()
         elif column == self.COMMON_NAME_COL:
-            if child == -1:
-                if service.is_public():
-                    return service.get_common_name()
-                else:
-                    return service.get_unique_name()
+            return service.get_common_name()
         elif column == self.IS_PUBLIC_COL:
             return service.is_public()
         elif column == self.PROCESS_ID_COL:
-            if child == 1:
-                return service.get_process_id()
+            return service.get_process_id()
         elif column == self.PROCESS_PATH_COL:
             return service.get_process_path()
         elif column == self.PROCESS_NAME_COL:
-            if child == 1:
-                return service.get_process_name()
+            return service.get_process_name()
+        elif column == self.DISPLAY_COL:
+            if child == -1:
+                return '<b>' + self._get_display_name(service) + '</b>'
+            elif child == 1:
+                return '<b>Process: </b>' + service.get_process_name() + ' (' + str(service.get_process_id()) + ')' 
+            elif child == 0:
+                return '<b>Unique Name: </b>'+ service.get_unique_name()
         else:
             raise InvalidColumnError(column) 
 
