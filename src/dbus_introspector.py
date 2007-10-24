@@ -201,8 +201,6 @@ class BusWatch(gtk.GenericTreeModel):
     # if name is not unique and owner is set add the name to the service
     # else create a new service
     def add_service(self, name, owner=None):
-        
-
         if name[0] == ':':
             if self.unique_services.has_key(name):
                 return
@@ -263,7 +261,7 @@ class BusWatch(gtk.GenericTreeModel):
             self.service_list.pop(index)
             
             del(self.unique_services[name])
-            self.row_deleted((index,))       
+            self.row_deleted((index,))
         else:
             if not owner:
                 return
@@ -293,10 +291,10 @@ class BusWatch(gtk.GenericTreeModel):
                 self.remove_service(name)
 
         else :
-            if old_owner:
+            if new_owner:
                 self.add_service(name, new_owner)
             
-            if new_owner:
+            if old_owner:
                 self.remove_service(name, old_owner)
 
     def list_names_handler(self, names):
@@ -368,7 +366,6 @@ class BusWatch(gtk.GenericTreeModel):
 
         return None
 
-    @print_method
     def on_iter_next(self, rowref):
         try:
             service = rowref[0]
@@ -386,7 +383,6 @@ class BusWatch(gtk.GenericTreeModel):
         except IndexError:
             return None
 
-    @print_method
     def on_iter_children(self, parent):
         if parent:
             if len(parent) == 1:
@@ -396,14 +392,12 @@ class BusWatch(gtk.GenericTreeModel):
 
         return (self.service_list[0],)
 
-    @print_method
     def on_iter_has_child(self, rowref):
         if len(rowref) == 1:
             return True
         else:
             return False
 
-    @print_method
     def on_iter_n_children(self, rowref):
         if rowref:
             if len(rowref) == 1:
@@ -413,7 +407,6 @@ class BusWatch(gtk.GenericTreeModel):
 
         return len(self.service_list)
 
-    @print_method
     def on_iter_nth_child(self, parent, n):
         if parent:
             if n < 2:
@@ -425,7 +418,6 @@ class BusWatch(gtk.GenericTreeModel):
         except IndexError:
             return None
 
-    @print_method
     def on_iter_parent(self, child):
         return (child[0],) 
 
