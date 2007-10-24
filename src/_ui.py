@@ -189,10 +189,11 @@ class ServiceView(gtk.TreeView):
                (common_name and common_name.find(self.filter_string)!=-1) or \
                str(process_id).startswith(self.filter_string):
                 return True
-                
-            for item in process_path:
-                if (item.find(self.filter_string)!=-1):
-                    return True
+            
+            if process_path:    
+                for item in process_path:
+                    if (item.find(self.filter_string)!=-1):
+                        return True
 
             return False
 

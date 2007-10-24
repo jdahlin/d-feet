@@ -43,8 +43,16 @@ class CommonServiceData:
         self.process_path = None
         self.process_name = 'Unknown or Remote' 
         
-class BusService:
+class BusService(gobject.GObject):
+    __gsignals__ = {
+        'changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,())
+                   }
+
+
     def __init__(self, unique_name, bus, common_name = None, clone_from_service = None):
+
+        super(BusService, self).__init__()
+
         if not clone_from_service:
             self.common_data = CommonServiceData()
         else:
@@ -61,10 +69,9 @@ class BusService:
         self.service_is_public = not (not common_name)
 
     def set_common_name(self, common_name):
-        if common_name.find("BusWatch") != -1:
-            import pdb; pdb.set_trace()
         self.service_is_public = True
         self.common_name = common_name
+        self.emit('changed')
 
     def get_display_name(self):
         if self.is_public():
@@ -86,6 +93,8 @@ class BusService:
         self.common_data.process_path = path
         if path:
             self.common_data.process_name = os.path.basename(path[0])
+
+        self.emit('changed')
 
     def get_unique_name(self):
         return self.common_data.unique_name
@@ -198,6 +207,12 @@ class BusWatch(gtk.GenericTreeModel):
                 reply_handler = lambda id: self.get_unix_process_id_cb(name, id),
                 error_handler = lambda error: self.get_unix_process_id_error_cb(name, error))
 
+
+    def service_changed_cb(self, service):
+        path = (self.service_list.index(service,))
+        iter = self.get_iter(path)
+        self.row_changed(path, iter)
+
     # if name is not unique and owner is set add the name to the service
     # else create a new service
     def add_service(self, name, owner=None):
@@ -206,6 +221,7 @@ class BusWatch(gtk.GenericTreeModel):
                 return
 
             service = BusService(name, self.bus)
+            service.connect('changed', self.service_changed_cb)
             self.unique_services[name] = [service]
             self.get_unix_process_id_async_helper(name)
             self.service_list.append(service)
@@ -316,7 +332,6 @@ class BusWatch(gtk.GenericTreeModel):
     def on_get_column_type(self, n):
         return self.COL_TYPES[n]
 
-    @print_method
     def on_get_iter(self, path):
         try:
             if len(path) == 1:
@@ -326,7 +341,6 @@ class BusWatch(gtk.GenericTreeModel):
         except IndexError:
             return None
 
-    @print_method
     def on_get_path(self, rowref):
         index = self.files.index(rowref[0])
         if len(rowref) == 1:
