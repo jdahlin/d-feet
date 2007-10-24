@@ -1,3 +1,5 @@
+import os
+
 # TODO: Check against other Unix's
 def get_proc_from_pid(pid):
     procpath = '/proc/' + str(pid) + '/cmdline'
@@ -12,3 +14,8 @@ def get_proc_from_pid(pid):
 
     return fullpath
 
+# TODO: figure out more robust way to do this
+def get_glade_file():
+    glade_dir = os.environ['GLADE_DIR']
+    glade_file = glade_dir + '/dfeet.glade'
+    return glade_file
