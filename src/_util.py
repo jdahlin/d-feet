@@ -19,3 +19,11 @@ def get_glade_file():
     glade_dir = os.environ['GLADE_DIR']
     glade_file = glade_dir + '/dfeet.glade'
     return glade_file
+
+def print_method(m):
+    def decorator(*args):
+        print "call:", m,args
+        r = m(*args)
+        print "return:", r
+        return r
+    return decorator

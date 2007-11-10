@@ -3,20 +3,15 @@ import dbus.mainloop.glib
 import gobject
 import gtk
 import _util
+import _introspect_parser 
 import os
+
+from introspect_data import IntrospectData
 
 SESSION_BUS = 1
 SYSTEM_BUS = 2
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
-
-def print_method(m):
-    def decorator(*args):
-        #print "call:", m,args
-        r = m(*args)
-        #print "return:", r
-        return r
-    return decorator
 
 class Error(Exception):
     pass
@@ -35,13 +30,58 @@ class InvalidColumnError(Error):
     def __str__(self):
         return repr('Column number \'%i\' requested but is not valid' % self.column)
 
-class CommonServiceData:
+class CommonServiceData(gobject.GObject):
+    __gsignals__ = {
+        'introspect_data_changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,())
+                   }
+
     def __init__(self):
+        super(CommonServiceData, self).__init__()
+
         self.unique_name = None
         self.bus = None
         self.process_id = None
         self.process_path = None
         self.process_name = 'Unknown or Remote' 
+        self._introspecting = False
+        self._introspection_data = IntrospectData() 
+        self._introspect_object_queue = []
+
+    # there is a race condition here but D-Bus
+    # doesn't have a signal for introspection data change
+    # which would be impractical for some highly dynamic objects 
+    def _introspect(self, name, node):
+        self._introspecting = True
+        obj = self.bus.get_object(name, node, follow_name_owner_changes=True)
+        obj.Introspect(dbus_interface='org.freedesktop.DBus.Introspectable',
+                       reply_handler=lambda xml: self._query_introspect_data_cb(name, node, xml),
+                       error_handler=self._query_introspect_data_error_cb)
+
+    def _query_introspect_data_error_cb(self, error):
+        print error
+        self._introspecting = False
+        # errors are expected
+
+    def _query_introspect_data_cb(self, name, parent_node, xml):
+        self._introspecting = False
+        data = _introspect_parser.process_introspection_data(xml)
+        for node in data['child_nodes']:
+            cnode = ''
+            if parent_node != '/':
+                cnode = parent_node
+                
+            cnode += '/' + node 
+            self._introspect_object_queue.append(cnode)            
+
+        if self._introspect_object_queue:
+            obj = self._introspect_object_queue.pop(0)
+            self._introspect(name, obj)
+
+        if data['interfaces']:
+            self._introspection_data.append(parent_node, data)
+        
+             
+        self.emit('introspect_data_changed')
         
 class BusService(gobject.GObject):
     __gsignals__ = {
@@ -65,8 +105,25 @@ class BusService(gobject.GObject):
 
         self.common_data.bus = bus
         self.common_data.unique_name = str(unique_name)
+        self.common_data.connect('introspect_data_changed', 
+                                 self._introspect_data_changed_cb)
 
         self.service_is_public = not (not common_name)
+
+    def query_introspect(self, node = '/'):
+        self.common_data._introspect(self.get_display_name(), node)
+
+
+    def _introspect_data_changed_cb(self, data):
+        '''
+        print "*********************************************"
+        print len(data._introspection_data.object_paths.object_path_list)
+        i = 0
+        for o in data._introspection_data.object_paths.object_path_list:
+            print i, o
+            i+=1
+        print "*********************************************"'''
+        self.emit('changed')
 
     def set_common_name(self, common_name):
         self.service_is_public = True
@@ -407,6 +464,7 @@ class BusWatch(gtk.GenericTreeModel):
         return (self.service_list[0],)
 
     def on_iter_has_child(self, rowref):
+        return False
         if len(rowref) == 1:
             return True
         else:

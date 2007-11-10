@@ -53,11 +53,11 @@
         <child>
             <widget class="GtkTable" id="sort_and_filter_table1">
                 <property name="n_columns">2</property>
-                <property name="n_rows">2</property>
+                <property name="n_rows">1</property>
                 <property name="visible">True</property>
                 <child>
-                    <widget class="GtkLabel" id="label1">
-                        <property name="label" context="yes" translatable="yes">Sort: </property>
+                    <widget class="GtkLabel" id="label2">
+                        <property name="label" context="yes" translatable="yes">Filter: </property>
                         <property name="visible">True</property>
                         <property name="xalign">1.0</property>
                     </widget>
@@ -67,43 +67,18 @@
                     </packing>
                 </child>
                 <child>
-                    <widget class="GtkLabel" id="label2">
-                        <property name="label" context="yes" translatable="yes">Filter: </property>
-                        <property name="visible">True</property>
-                        <property name="xalign">1.0</property>
-                    </widget>
-                    <packing>
-                        <property name="bottom_attach">2</property>
-                        <property name="top_attach">1</property>
-                        <property name="x_options">fill</property>
-                        <property name="y_options">fill | shrink</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkComboBox" id="sort_combo1">
-                        <property name="items" context="yes" translatable="yes">Common Name
-Unique Name
-Process Name</property>
-                        <signal handler="sort_combo_changed" name="changed"/>
-                    </widget>
-                    <packing>
-                        <property name="left_attach">1</property>
-                        <property name="right_attach">2</property>
-                        <property name="x_options">fill | shrink</property>
-                        <property name="y_options">fill | shrink</property>
-                    </packing>
-                </child>
-                <child>
                     <widget class="GtkHBox" id="hbox1">
                         <property name="visible">True</property>
                         <child>
                             <widget class="GtkEntry" id="filter_entry1">
                                 <property name="visible">True</property>
+                                <signal handler="filter_entry_changed" name="button-release-event"/>
                                 <signal handler="filter_entry_changed" name="key-release-event"/>
                             </widget>
                         </child>
                         <child>
                             <widget class="GtkToggleButton" id="private_togglebutton1">
+                                <property name="is_focus">True</property>
                                 <property name="label" context="yes" translatable="yes">Hide Private</property>
                                 <property name="visible">True</property>
                                 <signal handler="hide_private_toggled" name="toggled"/>
@@ -116,11 +91,9 @@ Process Name</property>
                         </child>
                     </widget>
                     <packing>
-                        <property name="bottom_attach">2</property>
                         <property name="left_attach">1</property>
                         <property name="right_attach">2</property>
-                        <property name="top_attach">1</property>
-                        <property name="x_options">expand | fill | shrink</property>
+                        <property name="x_options">fill | shrink</property>
                         <property name="y_options">fill | shrink</property>
                     </packing>
                 </child>
@@ -197,13 +170,14 @@ Process Name</property>
                     </packing>
                 </child>
                 <child>
-                    <widget class="GtkExpander" id="interfaces_expander1">
-                        <property name="expanded">True</property>
-                        <property name="label" context="yes" translatable="yes">Interfaces</property>
-                        <property name="use_markup">True</property>
+                    <widget class="GtkScrolledWindow" id="introspect_scrolledwindow1">
                         <property name="visible">True</property>
                         <child>
-                            <placeholder/>
+                            <widget class="GtkViewport" id="viewport1">
+                                <child>
+                                    <placeholder/>
+                                </child>
+                            </widget>
                         </child>
                     </widget>
                     <packing>

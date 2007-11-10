@@ -7,7 +7,7 @@ import _util
 
 from dbus_introspector import BusWatch
 
-class BusPaned(gtk.HPaned):
+class BusPaned(gtk.VPaned):
     def __init__(self, watch):
         super(BusPaned, self).__init__()
 
@@ -17,11 +17,11 @@ class BusPaned(gtk.HPaned):
 
         self.pack1(self.service_box)
         self.pack2(self.service_info_box)
-        self.set_position(300)
+        self.set_position(200)
 
     def service_selected_cb(self, service_box, service):
         self.service_info_box.set_service(service)
-
+    
 class ServiceInfoBox(gtk.VBox):
     def __init__(self):
         super(ServiceInfoBox, self).__init__()
@@ -33,11 +33,59 @@ class ServiceInfoBox(gtk.VBox):
         self.name_label = xml.get_widget('name_label1')
         self.unique_name_label = xml.get_widget('unique_name_label1')
         self.process_label = xml.get_widget('process_label1')
+        self.introspection_box = xml.get_widget('introspect_scrolledwindow1')
+
+        self.introspect_tree_view = gtk.TreeView()
+        renderer = gtk.CellRendererText()
+        column = gtk.TreeViewColumn("Introspection Data", 
+                                    renderer, text=1)
+        column.set_cell_data_func(renderer, 
+                                  self.cell_data_handler, 
+                                  self.introspect_tree_view)
+
+        self.introspect_tree_view.connect('row-collapsed', 
+                                          self.row_collapsed_handler)
+        self.introspect_tree_view.connect('row-expanded', 
+                                          self.row_expanded_handler)
+        
+        self.introspect_tree_view.append_column(column)
+        self.introspection_box.remove(self.introspection_box.get_child())
+        self.introspection_box.add(self.introspect_tree_view)
+        self.introspect_tree_view.show_all()
 
         self.add(info_table)
 
+    def row_collapsed_handler(self, treeview, iter, path):
+        model = treeview.get_model()
+        node = model.get(iter, model.SUBTREE_COL)[0]
+        node.set_is_open(False)
+
+    def row_expanded_handler(self, treeview, iter, path):
+        model = treeview.get_model()
+        node = model.get(iter, model.SUBTREE_COL)[0]
+        node.set_is_open(True)
+
+    def cell_data_handler(self, column, cell, model, iter, treeview):
+        node = model.get(iter, model.SUBTREE_COL)[0]
+        if node.is_open():
+            path = model.get_path(iter)
+            treeview.expand_row(path, False)
+
+    def introspect_changed(self, service):
+        #print service.common_data._introspection_data
+        pass
+
     def set_service(self, service):
+        if self.service:
+            self.service.disconnect(self.service._introspect_changed_signal_id)
+
         self.service = service
+
+        self.introspect_tree_view.set_model(service.common_data._introspection_data)
+        if self.service:
+            self.service.query_introspect()
+            self.service._introspect_changed_signal_id = self.service.connect('changed', self.introspect_changed)
+
         self.refresh()
 
     def clear(self):
@@ -72,7 +120,7 @@ class ServiceBox(gtk.VBox):
     def __init__(self, watch):
         super(ServiceBox, self).__init__()
 
-        signal_dict = { 'sort_combo_changed' : self.sort_combo_changed_cb,
+        signal_dict = { 
                         'hide_private_toggled' : self.hide_private_toggled_cb,
                         'filter_entry_changed': self.filter_entry_changed_cb
                       } 
@@ -90,13 +138,13 @@ class ServiceBox(gtk.VBox):
 
         xml.signal_autoconnect(signal_dict)
 
-        combo_box = xml.get_widget('sort_combo1')
-        combo_box.set_active(0)
-
         self.show_all()
 
     def service_selected_cb(self, treeview):
         (model, iter) = treeview.get_selection().get_selected()
+        if not iter:
+            return
+
         service = model.get_value(iter, BusWatch.SERVICE_OBJ_COL)
         self.emit('service-selected', service)
 
@@ -107,6 +155,7 @@ class ServiceBox(gtk.VBox):
 
         self.tree_view.set_filter_string(value)
         self.tree_view.refilter()
+
     def hide_private_toggled_cb(self, toggle):
         self.tree_view.set_hide_private(toggle.get_active())
         self.tree_view.refilter()
@@ -135,23 +184,53 @@ class ServiceView(gtk.TreeView):
         self.set_property('enable-tree-lines', True)
         self.set_property('enable-search', True)
         self.watch = watch
+       
+        self.filter_model = self.watch.filter_new()
+        self.filter_model.set_visible_func(self._filter_cb)
         
-        self.sort_model = gtk.TreeModelSort(self.watch)
+        self.sort_model = gtk.TreeModelSort(self.filter_model)
         self.sort_model.set_sort_column_id(self.watch.COMMON_NAME_COL, gtk.SORT_ASCENDING)
         self.sort_model.set_sort_func(self.watch.UNIQUE_NAME_COL, self._sort_on_name, self.watch.UNIQUE_NAME_COL)
         self.sort_model.set_sort_func(self.watch.COMMON_NAME_COL, self._sort_on_name, self.watch.COMMON_NAME_COL)
 
-        self.filter_model = self.sort_model.filter_new()
-        self.filter_model.set_visible_func(self._filter_cb)
-
         renderer = gtk.CellRendererText()
-        column = gtk.TreeViewColumn("Services", 
+        column = gtk.TreeViewColumn("Service Name", 
                                     renderer, 
                                     markup=watch.DISPLAY_COL
                                     )
+        column.set_resizable(True)
+        column.set_sort_column_id(watch.COMMON_NAME_COL)
         self.append_column(column)
 
-        self.set_model(self.filter_model)
+        column = gtk.TreeViewColumn("Unique Name", 
+                                    renderer, 
+                                    text=watch.UNIQUE_NAME_COL
+                                    )
+        column.set_resizable(True)
+        column.set_sort_column_id(watch.UNIQUE_NAME_COL)
+        self.append_column(column)
+
+        column = gtk.TreeViewColumn("Process Name", 
+                                    renderer, 
+                                    text=watch.PROCESS_NAME_COL
+                                    )
+        column.set_resizable(True)
+        column.set_sort_column_id(watch.PROCESS_NAME_COL)
+        self.append_column(column)
+
+        column = gtk.TreeViewColumn("PID", 
+                                    renderer, 
+                                    text=watch.PROCESS_ID_COL
+                                    )
+        column.set_resizable(True)
+        column.set_sort_column_id(watch.PROCESS_ID_COL)
+        self.append_column(column)
+
+
+        self.set_headers_clickable(True)
+        self.set_reorderable(True)
+        self.set_search_equal_func(self._search_cb)
+        self.set_model(self.sort_model)
 
     def set_sort_column(self, col):
         self.sort_model.set_sort_column_id(col, gtk.SORT_ASCENDING)
@@ -164,10 +243,9 @@ class ServiceView(gtk.TreeView):
 
     def refilter(self):
         self.filter_model.refilter()
+        
 
-    def _filter_cb(self, model, iter):
-        #TODO: break this out so we can use it for searching also
-        #TODO: support hilighting of search strings
+    def _is_iter_equal(self, model, iter, key):
         (unique_name, 
          common_name, 
          process_id,
@@ -184,20 +262,27 @@ class ServiceView(gtk.TreeView):
                 return False
 
         # TODO: support filtering on introspect data
-        if self.filter_string:
-            if (unique_name and unique_name.find(self.filter_string)!=-1) or \
-               (common_name and common_name.find(self.filter_string)!=-1) or \
-               str(process_id).startswith(self.filter_string):
+        if key:
+            if (unique_name and unique_name.find(key)!=-1) or \
+               (common_name and common_name.find(key)!=-1) or \
+               str(process_id).startswith(key):
                 return True
             
             if process_path:    
                 for item in process_path:
-                    if (item.find(self.filter_string)!=-1):
+                    if (item.find(key)!=-1):
                         return True
 
             return False
 
         return True
+
+
+    def _search_cb(self, model, column, key, iter):
+        return not self._is_iter_equal(model, iter, key)
+
+    def _filter_cb(self, model, iter):
+        return self._is_iter_equal(model, iter, self.filter_string)
 
     def _sort_on_name(self, model, iter1, iter2, col):
         un1 = model.get_value(iter1, col)
