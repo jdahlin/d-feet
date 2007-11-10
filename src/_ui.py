@@ -58,16 +58,16 @@ class ServiceInfoBox(gtk.VBox):
     def row_collapsed_handler(self, treeview, iter, path):
         model = treeview.get_model()
         node = model.get(iter, model.SUBTREE_COL)[0]
-        node.set_is_open(False)
+        node.set_expanded(False)
 
     def row_expanded_handler(self, treeview, iter, path):
         model = treeview.get_model()
         node = model.get(iter, model.SUBTREE_COL)[0]
-        node.set_is_open(True)
+        node.set_expanded(True)
 
     def cell_data_handler(self, column, cell, model, iter, treeview):
         node = model.get(iter, model.SUBTREE_COL)[0]
-        if node.is_open():
+        if node.is_expanded():
             path = model.get_path(iter)
             treeview.expand_row(path, False)
 
