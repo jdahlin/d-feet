@@ -9,6 +9,22 @@ class Node:
         self.parent = parent
         self.model = model
         self.expanded = False
+        self.valid = True
+
+    def mark_tree_invalid(self):
+        self.valid = False
+        for child in self.child_list:
+            child.mark_tree_invalid()
+
+    def mark_valid(self):
+        self.valid = True
+
+    def reap_ivalid(self):
+        for child in self.child_list:
+            if child.reap_invalid():
+                pass
+        # FIXME
+        return not self.valid
 
     def set_expanded(self, expanded):
         self.expanded = expanded
@@ -24,14 +40,11 @@ class Node:
         return self.child_list.index(child)
 
     def on_get_iter(self, path):
-        try:
-            op = self.child_list[path[0]]
-            if len(path) == 1:
-                return op
-            else:
-                return op.on_get_iter(path[1:])
-        except IndexError:
-            return None
+        op = self.child_list[path[0]]
+        if len(path) == 1:
+            return op
+        else:
+            return op.on_get_iter(path[1:])
 
     def get_path_pos(self):
         pos = 0
@@ -78,43 +91,96 @@ class Node:
         iter = self.model.get_iter(path)
         self.model.row_inserted(path, iter)
 
-    def _calculate_path(self, last_path_pos):
+    def _calculate_path(self, *append_args):
         p = [self.get_path_pos()]
         parent = self.parent
         while parent:
             p.insert(0, parent.get_path_pos())
             parent = parent.parent
 
-        p.append(last_path_pos)
+        for pos in append_args:
+            p.append(pos)
 
-        return tuple(p)
+        return p
 
     def append(self, child):
-        self.child_list.append(child)
-        path = self._calculate_path(self.count_children()-1)
-        self._row_inserted(path)
+        self.insert(-1, child)
 
     def insert(self, i, child):
-        self.child_list.insert(i, child)
-        path = (0, i)
-        self._row_inserted(path)
+        if i == -1:
+            self.child_list.append(child)
+            i = len(self.child_list) - 1
+        else:
+            self.child_list.insert(i, child)
+
+        child_path = self._calculate_path(i)
+        self._row_inserted(tuple(child_path))
+
+        #my_path = tuple(child_path[0:-1])
+        #my_iter = None
+        #if my_path:
+        #    my_iter = self.model.get_iter(my_path)
+
+        #l = len(self.child_list)
+        #reorder_list = range(l)
+        #self.model.rows_reordered(my_path, my_iter, reorder_list)
+        
+
+        #if i < l - 1:
+        #    last_path_item = len(path) - 1
+        #    for n in range(i + 1, l):
+        #        path[last_path_item] = n
+        #        self._row_changed(tuple(path)) 
+
+    def find(self, node):
+        i = 0
+        for path in self.child_list:
+            spath = str(path)
+            if spath >= node:
+                return i 
+
+            i+=1
+
+        return -1
 
     def add(self, data):
         # every node needs to figure this out for themselves 
         pass
 
+    def _add_child(self, child, data):
+        child_path = None
+
+        i = self.find(str(child))
+        if i == -1:
+            self.append(child)
+        else:
+            objpath = self.child_list[i]
+            if str(objpath) == str(child):
+                child = objpath
+                child.mark_valid()
+                child_path = tuple(self._calculate_path(i))
+            else:
+                self.insert(i, child)
+
+        child.add(data)
+        if child_path:
+            child._row_changed(child_path)
+
 class Method(Node):
     # tree path = (0,x,0,y,0,z)
     def __init__(self, model, parent, method, insig, outsig):
+        Node.__init__(self, model, parent)
+
         self.method = method
         self.insig = insig
         self.outsig = outsig
-        
-        Node.__init__(self, model, parent)
 
     def __str__(self):
         result = self.method + '('
-        result += dbus_utils.sig_to_string(self.insig) + ')' 
+        result += dbus_utils.sig_to_string(self.insig) + ')'
+        
+        if self.outsig:
+            result += ' -> (' +  dbus_utils.sig_to_string(self.outsig) + ')'
             
         return result
 
@@ -141,8 +207,8 @@ class MethodLabel(Node):
         method_list = data.keys()
         method_list.sort()
         for method_name in method_list:
-            method = Method(self, self.model, method_name, data[method_name][0], data[method_name][1])
-            self.append(method)
+            method = Method(self.model, self, method_name, data[method_name][0], data[method_name][1])
+            self._add_child(method, None)
 
     def __str__(self):
         return "Methods"
@@ -156,8 +222,8 @@ class SignalLabel(Node):
         signal_list = data.keys()
         signal_list.sort()
         for signal_name in signal_list:
-            signal = Signal(self, self.model, signal_name, data[signal_name])
-            self.append(signal)
+            signal = Signal(self.model, self, signal_name, data[signal_name])
+            self._add_child(signal, None)
 
     def __str__(self):
         return 'Signals'
@@ -173,12 +239,10 @@ class Interface(Node):
         signal_data = data['signals']
 
         methods = MethodLabel(self.model, self)
-        self.append(methods)
-        methods.add(method_data)
+        self._add_child(methods, method_data)
 
         signals = SignalLabel(self.model, self)
-        self.append(signals)
-        signals.add(signal_data)
+        self._add_child(signals, signal_data)
 
     def __str__(self):
         return self.iface
@@ -193,8 +257,7 @@ class InterfaceLabel(Node):
         iface_list.sort()
         for iface in iface_list:
             interface = Interface(self.model, self, iface)
-            self.append(interface)
-            interface.add(data[iface])            
+            self._add_child(interface, data[iface])
 
     def __str__(self):
         return "Interfaces"
@@ -210,8 +273,7 @@ class ObjectPath(Node):
         iface_data = data['interfaces']
 
         interfaces = InterfaceLabel(self.model, self)
-        self.append(interfaces)
-        interfaces.add(iface_data)
+        self._add_child(interfaces, iface_data)
 
     def __str__(self):
         return self.path
@@ -223,50 +285,10 @@ class ObjectPathLabel(Node):
         Node.__init__(self, model)
         self.set_expanded(True)
 
-    def find(self, node):
-        i = 0
-        for path in self.child_list:
-            spath = str(path)
-            if spath >= node:
-                return i 
-
-            i+=1
-
-        return -1
-
-    def get_path_pos(self):
-        return 0
-
-    def _row_changed(self):
-        tree_path = (0,)
-        iter = self.model.get_iter(tree_path)
-        self.model.row_changed(tree_path, iter)
-
     def add(self, data, node):
         obj_path = ObjectPath(self.model, self, node)
 
-        if self.child_list:
-            i = self.find(node)
-            if i == -1:
-                self.append(obj_path)
-                obj_path.add(data)
-                return
-
-            # TODO: figure out a more generic way to handle
-            #       similar data.  BTW we are going to 
-            #       emit changed signals instead of a delete
-            #       and add
-            path = self.child_list[i]
-            if str(path) == node:
-                o = self.child_list.pop(i)
-                tree_path = (0, i)
-                self.model.row_deleted(tree_path)
-
-            self.insert(i, obj_path)
-        else:
-            self.append(obj_path)
-
-        obj_path.add(data)        
+        self._add_child(obj_path, data)
 
     def __str__(self):
         return "Object Paths"
@@ -299,6 +321,16 @@ class IntrospectData(gtk.GenericTreeModel):
         self.object_paths = ObjectPathLabel(self)
 
     def append(self, parent_node, data):
+        # mark the object path tree invalid if it already
+        # exists so we can keep track of state and reap
+        # any branches which are not in the new introspect
+        # data
+        i = self.object_paths.find(parent_node)
+        if i >= 0:
+            objpath = self.object_paths.child_list[i]
+            if str(objpath) == parent_node:
+                objpath.mark_tree_invalid()
+
         self.object_paths.add(data, parent_node)
         del(data)
 
@@ -358,13 +390,13 @@ class IntrospectData(gtk.GenericTreeModel):
 
     def on_iter_n_children(self, rowref):
         if rowref:
-            rowref.count_children()
+            return rowref.count_children()
 
         return 1 
 
     def on_iter_nth_child(self, parent, n):
         if parent:
-            parent.get_nth_child(n)
+            return parent.get_nth_child(n)
         
         if n == 0:
             return self.object_paths
@@ -374,20 +406,20 @@ class IntrospectData(gtk.GenericTreeModel):
     def on_iter_parent(self, child):
         return child.parent
 
+    def _node_to_str(self, node, prefix=''):
+        if not node:
+            return ""
+
+        if prefix == None:
+            prefix = ""
+
+        result = prefix + str(node) + '\n'
+        for child in node.child_list:
+            result += self._node_to_str(child, prefix + '\t')
+            
+        return result 
+
     def __str__(self):
-        result = str(self.object_paths) + '\n'
-        for op in self.object_paths.object_path_list:
-            result += '\t' + str(op) + '\n'
-            result += '\t\t' + str(op.interfaces) + '\n'
-            for iface in op.interfaces.interface_list:
-                result += '\t\t\t' + str(iface) + '\n'
-                result += '\t\t\t\t' + str(iface.methods) + '\n'
-                for method in iface.methods.method_list:
-                    result += '\t\t\t\t\t' + str(method) + '\n'
-                result += '\t\t\t\t' + str(iface.signals) + '\n'
-                for signal in iface.signals.signal_list:
-                    result += '\t\t\t\t\t' + str(signal) + '\n'
 
-        return result
-
+        return self._node_to_str(self.object_paths)
 
