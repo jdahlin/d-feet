@@ -127,10 +127,18 @@ class ServiceBox(gtk.VBox):
 
         xml = gtk.glade.XML(_util.get_glade_file(), 'sort_and_filter_table1')
         filter_box = xml.get_widget('sort_and_filter_table1')
+        filter_entry = xml.get_widget('filter_entry1')
         self.pack_start(filter_box, False, False)
 
         self.tree_view = ServiceView(watch)
         self.tree_view.connect('cursor_changed', self.service_selected_cb)
+
+        self.completion = gtk.EntryCompletion()
+        self.completion.set_model(watch)
+        self.completion.set_match_func(self._completion_match_func)
+        self.completion.set_inline_completion(True)
+        self.completion.set_inline_selection(True)
+        filter_entry.set_completion(self.completion)
 
         scroll = gtk.ScrolledWindow()
         scroll.add(self.tree_view)
@@ -139,6 +147,11 @@ class ServiceBox(gtk.VBox):
         xml.signal_autoconnect(signal_dict)
 
         self.show_all()
+
+    def _completion_match_func(self, completion, key, iter):
+        print completion, key, iter 
+        return self.tree_view._is_iter_equal(completion.get_model(),
+                                            iter, key)
 
     def service_selected_cb(self, treeview):
         (model, iter) = treeview.get_selection().get_selected()

@@ -216,6 +216,7 @@ class BusWatch(gtk.GenericTreeModel):
         self.bus = None
         self.unique_services = {}
         self.service_list = []
+        #self.completion_model = gtk.ListStore()
 
         super(BusWatch, self).__init__()
 
@@ -241,6 +242,9 @@ class BusWatch(gtk.GenericTreeModel):
 
         self.bus_interface.ListNames(reply_handler=self.list_names_handler,
                                      error_handler=self.list_names_error_handler)
+
+    def get_completion_model(self):
+        return self.completion_model()
 
     def get_unix_process_id_cb(self, name, id):
         services = self.unique_services[name]
@@ -285,8 +289,6 @@ class BusWatch(gtk.GenericTreeModel):
             path = (self.service_list.index(service),)
             iter = self.get_iter(path)
             self.row_inserted(path, iter) 
-            self.row_has_child_toggled(path, iter)
-
         else:
             if not owner:
                 owner = self.bus_interface.GetNameOwner(name)
@@ -306,8 +308,6 @@ class BusWatch(gtk.GenericTreeModel):
                     path = (self.service_list.index(service),)
                     iter = self.get_iter(path)
                     self.row_inserted(path, iter)
-                    self.row_has_child_toggled(path, iter)
-
                 else:
                     service.set_common_name(name)
 
@@ -319,7 +319,6 @@ class BusWatch(gtk.GenericTreeModel):
                 path = (self.service_list.index(service),)
                 iter = self.get_iter(path)
                 self.row_inserted(path, iter)
-                self.row_has_child_toggled(path, iter)
 
     def remove_service(self, name, owner=None):
         if not name:
