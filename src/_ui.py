@@ -6,6 +6,7 @@ import os
 import _util
 
 from dbus_introspector import BusWatch
+from introspect_data import IntrospectData, Method, Signal
 
 class BusPaned(gtk.VPaned):
     def __init__(self, watch):
@@ -38,7 +39,7 @@ class ServiceInfoBox(gtk.VBox):
         self.introspect_tree_view = gtk.TreeView()
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("Introspection Data", 
-                                    renderer, text=1)
+                                    renderer, markup=1)
         column.set_cell_data_func(renderer, 
                                   self.cell_data_handler, 
                                   self.introspect_tree_view)
@@ -54,6 +55,25 @@ class ServiceInfoBox(gtk.VBox):
         self.introspect_tree_view.show_all()
 
         self.add(info_table)
+
+        self.introspect_tree_view.connect('row-activated', 
+                                          self.row_activated_handler)
+
+    def row_activated_handler(self, treeview, path, view_column):
+        model = treeview.get_model() 
+        iter = model.get_iter(path)
+
+        node = model.get_value(iter, IntrospectData.SUBTREE_COL)
+
+        # TODO: Figure out what to do with signals
+        if isinstance(node, Method):
+            dialog = ExecuteMethodDialog(self.service, node)
+            dialog.run()
+        else:
+            if treeview.row_expanded(path):
+                treeview.collapse_row(path)
+            else:
+                treeview.expand_row(path, False)
 
     def row_collapsed_handler(self, treeview, iter, path):
         model = treeview.get_model()
@@ -325,4 +345,63 @@ class ServiceView(gtk.TreeView):
             return 1
         else:
             return -1
-        
+
+class ExecuteMethodDialog:
+    def __init__(self, service, method):
+        signal_dict = { 
+                        'execute_dbus_method_cb' : self.execute_cb,
+                        'execute_dialog_close_cb': self.close_cb
+                      } 
+
+        xml = gtk.glade.XML(_util.get_glade_file(), 'executedialog1')
+        self.dialog = xml.get_widget('executedialog1')
+        self.command_label = xml.get_widget('commandlabel1')
+        self.notebook = xml.get_widget('notebook1')
+        self.parameter_textview = xml.get_widget('parametertextview1')
+        self.source_textview = xml.get_widget('sourcetextview1')
+        self.notebook.set_tab_label_text(self.source_textview.get_parent(), 
+                                         'Source')
+        self.prettyprint_textview = xml.get_widget('prettyprinttextview1')
+        self.notebook.set_tab_label_text(self.prettyprint_textview.get_parent(), 
+                                         'Pretty Print')
+        xml.signal_autoconnect(signal_dict)
+
+        self.service = service
+        self.method = method
+
+        # FIXME: get the interface and object path
+        text = 'Execute ' + str(self.method) 
+        self.command_label.set_text(text)
+
+    def execute_cb(self, widget):
+        # TODO: make call async, time it and add spinner to dialog 
+        try:
+            args = ()
+            buf = self.parameter_textview.get_buffer()
+            params = buf.get_text(buf.get_start_iter(), 
+                                  buf.get_end_iter())
+            if params:
+                params = '(' + params + ',)'
+                args = eval(params)
+
+            result = self.method.dbus_call(self.service.get_bus(), 
+                              self.service.get_display_name(),
+                              *args)
+        except Exception, e: # FIXME: treat D-Bus errors differently
+                             #        from parameter errors?
+            result = str(e) 
+
+        if not result:
+            result = 'This method did not return anything'
+        else:
+            result = str(result)
+
+        # FIXME: Format results for pretty print
+        self.prettyprint_textview.get_buffer().set_text(result)
+        self.source_textview.get_buffer().set_text(result)
+
+    def run(self):
+        self.dialog.run()
+
+    def close_cb(self, widget):
+        self.dialog.destroy()

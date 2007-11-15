@@ -1,6 +1,7 @@
 import gtk
 import gobject
 import dbus_utils
+import dbus
 import _util
 
 class Node:
@@ -23,7 +24,7 @@ class Node:
         for child in self.child_list:
             if child.reap_invalid():
                 pass
-        # FIXME
+        # FIXME - we need to reap items that are no longer valid
         return not self.valid
 
     def set_expanded(self, expanded):
@@ -166,6 +167,9 @@ class Node:
         if child_path:
             child._row_changed(child_path)
 
+    def to_markup_str(self):
+        return gobject.markup_escape_text(str(self))
+
 class Method(Node):
     # tree path = (0,x,0,y,0,z)
     def __init__(self, model, parent, method, insig, outsig):
@@ -174,6 +178,32 @@ class Method(Node):
         self.method = method
         self.insig = insig
         self.outsig = outsig
+
+    def dbus_call(self, bus, name, *args):
+        # it is not strictly necisary to traverse the tree
+        # but it future proofs things just in case we move
+        # or remove node types
+        iface = ''
+        obj_path = ''
+        node = self.parent
+        
+        while node is not None:
+            if isinstance(node, Interface):
+                iface = str(node)
+
+            if isinstance(node, ObjectPath):
+                obj_path = str(node)
+
+            node = node.parent
+
+        if not (iface and obj_path):
+            raise Exception('introspection tree is corrupt')
+
+        proxy = bus.get_object(name, obj_path)
+        iface = dbus.Interface(proxy, iface)
+        func = getattr(iface, self.method)
+        
+        return func(*args)
 
     def __str__(self):
         result = self.method + '('
@@ -192,6 +222,12 @@ class Signal(Node):
 
         Node.__init__(self, model, parent)
 
+    def dbus_call(self, bus, name, *args):
+        # for testing out signals
+        # this actually isn't going to work since I
+        # can't spoof the sender unless I can own the name
+        pass
+
     def __str__(self):
         result = self.signal + '('
         result += dbus_utils.sig_to_string(self.insig) + ')'
@@ -202,6 +238,8 @@ class MethodLabel(Node):
     # tree path = (0,x,0,y,0)
     def __init__(self, model, parent):
         Node.__init__(self, model, parent)
+        self.set_expanded(True)
+        self._label = 'Methods'
 
     def add(self, data):
         method_list = data.keys()
@@ -210,13 +248,18 @@ class MethodLabel(Node):
             method = Method(self.model, self, method_name, data[method_name][0], data[method_name][1])
             self._add_child(method, None)
 
+    def to_markup_str(self):
+        return '<b>' + gobject.markup_escape_text(self._label) + '</b>'
+
     def __str__(self):
-        return "Methods"
+        return self._label
 
 class SignalLabel(Node):
     # tree path = (0,x,0,y,1)
     def __init__(self, model, parent):
         Node.__init__(self, model, parent)
+        self.set_expanded(True)
+        self._label = 'Signals'
 
     def add(self, data):
         signal_list = data.keys()
@@ -225,8 +268,11 @@ class SignalLabel(Node):
             signal = Signal(self.model, self, signal_name, data[signal_name])
             self._add_child(signal, None)
 
+    def to_markup_str(self):
+        return '<b>' + gobject.markup_escape_text(self._label) + '</b>' 
+
     def __str__(self):
-        return 'Signals'
+        return self._label
 
 class Interface(Node):
     # tree path = (0,x,0,y)
@@ -251,6 +297,9 @@ class InterfaceLabel(Node):
     # tree path = (0,x,0)
     def __init__(self, model, parent):
         Node.__init__(self, model, parent)
+        self.set_expanded(True)
+
+        self._label='Interfaces'
 
     def add(self, data):
         iface_list = data.keys()
@@ -259,8 +308,11 @@ class InterfaceLabel(Node):
             interface = Interface(self.model, self, iface)
             self._add_child(interface, data[iface])
 
+    def to_markup_str(self):
+        return '<b>' + gobject.markup_escape_text(self._label) + '</b>' 
+
     def __str__(self):
-        return "Interfaces"
+        return self._label
 
 class ObjectPath(Node):
     # tree path = (0,x)
@@ -285,13 +337,18 @@ class ObjectPathLabel(Node):
         Node.__init__(self, model)
         self.set_expanded(True)
 
+        self._label='Object Paths'
+
     def add(self, data, node):
         obj_path = ObjectPath(self.model, self, node)
 
         self._add_child(obj_path, data)
 
+    def to_markup_str(self):
+        return '<b>' + gobject.markup_escape_text(self._label) + '</b>'
+
     def __str__(self):
-        return "Object Paths"
+        return self._label
 
 class IntrospectData(gtk.GenericTreeModel):
     NUM_COL = 2 
@@ -364,7 +421,7 @@ class IntrospectData(gtk.GenericTreeModel):
         if column == self.SUBTREE_COL:
             return rowref
         elif column == self.DISPLAY_COL:
-            return str(rowref)
+            return rowref.to_markup_str()
         else:
             raise InvalidColumnError(column) 
 

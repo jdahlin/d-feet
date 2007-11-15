@@ -113,7 +113,6 @@ class BusService(gobject.GObject):
     def query_introspect(self, node = '/'):
         self.common_data._introspect(self.get_display_name(), node)
 
-
     def _introspect_data_changed_cb(self, data):
         '''
         print "*********************************************"
@@ -137,6 +136,9 @@ class BusService(gobject.GObject):
             result = self.get_unique_name()
 
         return result
+
+    def get_bus(self):
+        return self.common_data.bus
 
     def clear_common_name(self):
         self.service_is_public = False

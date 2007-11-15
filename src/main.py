@@ -15,9 +15,9 @@ def main(args):
     session_bus_watch = BusWatch(dbus_introspector.SESSION_BUS)    
     system_bus_watch = BusWatch(dbus_introspector.SYSTEM_BUS)
 
-    glade_xml = gtk.glade.XML(_util.get_glade_file(), 'window1')
+    glade_xml = gtk.glade.XML(_util.get_glade_file(), 'appwindow1')
 
-    main_window = glade_xml.get_widget('window1')
+    main_window = glade_xml.get_widget('appwindow1')
     main_window.connect('destroy',gtk.main_quit)
 
     session_bus_paned = _ui.BusPaned(session_bus_watch)
