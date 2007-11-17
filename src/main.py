@@ -30,10 +30,10 @@ def main(args):
 
     main_window.show()
 
-def print_services():
+def print_names():
     global session_bus_watch
     print '\n*************** '
-    for s in session_bus_watch.service_list:
+    for s in session_bus_watch.name_list:
         print str(s)
     print '\n'
 
@@ -41,5 +41,5 @@ def print_services():
 
 if __name__ == "__main__":
     main(sys.argv)
-    #gobject.timeout_add(2000, print_services)
+    #gobject.timeout_add(2000, print_names)
     gtk.main()

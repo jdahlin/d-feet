@@ -30,13 +30,13 @@ class InvalidColumnError(Error):
     def __str__(self):
         return repr('Column number \'%i\' requested but is not valid' % self.column)
 
-class CommonServiceData(gobject.GObject):
+class CommonNameData(gobject.GObject):
     __gsignals__ = {
         'introspect_data_changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,())
                    }
 
     def __init__(self):
-        super(CommonServiceData, self).__init__()
+        super(CommonNameData, self).__init__()
 
         self.unique_name = None
         self.bus = None
@@ -83,20 +83,20 @@ class CommonServiceData(gobject.GObject):
              
         self.emit('introspect_data_changed')
         
-class BusService(gobject.GObject):
+class BusName(gobject.GObject):
     __gsignals__ = {
         'changed' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,())
                    }
 
 
-    def __init__(self, unique_name, bus, common_name = None, clone_from_service = None):
+    def __init__(self, unique_name, bus, common_name = None, clone_from_busname = None):
 
-        super(BusService, self).__init__()
+        super(BusName, self).__init__()
 
-        if not clone_from_service:
-            self.common_data = CommonServiceData()
+        if not clone_from_busname:
+            self.common_data = CommonNameData()
         else:
-            self.common_data = clone_from_service.common_data
+            self.common_data = clone_from_busname.common_data
 
         if common_name:
             self.set_common_name(str(common_name))
@@ -108,7 +108,7 @@ class BusService(gobject.GObject):
         self.common_data.connect('introspect_data_changed', 
                                  self._introspect_data_changed_cb)
 
-        self.service_is_public = not (not common_name)
+        self.busname_is_public = not (not common_name)
 
     def query_introspect(self, node = '/'):
         self.common_data._introspect(self.get_display_name(), node)
@@ -125,7 +125,7 @@ class BusService(gobject.GObject):
         self.emit('changed')
 
     def set_common_name(self, common_name):
-        self.service_is_public = True
+        self.busname_is_public = True
         self.common_name = common_name
         self.emit('changed')
 
@@ -141,11 +141,11 @@ class BusService(gobject.GObject):
         return self.common_data.bus
 
     def clear_common_name(self):
-        self.service_is_public = False
+        self.busname_is_public = False
         self.common_name = None
 
     def is_public(self):
-        return self.service_is_public
+        return self.busname_is_public
 
     def set_process_info(self, id, path):
         self.common_data.process_id = id
@@ -196,7 +196,7 @@ class BusService(gobject.GObject):
 class BusWatch(gtk.GenericTreeModel):
     NUM_COL = 8 
 
-    (SERVICE_OBJ_COL, 
+    (BUSNAME_OBJ_COL, 
      UNIQUE_NAME_COL,
      COMMON_NAME_COL,
      IS_PUBLIC_COL,        # has a common name
@@ -216,8 +216,8 @@ class BusWatch(gtk.GenericTreeModel):
 
     def __init__(self, bus, address=None):
         self.bus = None
-        self.unique_services = {}
-        self.service_list = []
+        self.unique_names = {}
+        self.name_list = []
         #self.completion_model = gtk.ListStore()
 
         super(BusWatch, self).__init__()
@@ -249,16 +249,16 @@ class BusWatch(gtk.GenericTreeModel):
         return self.completion_model()
 
     def get_unix_process_id_cb(self, name, id):
-        services = self.unique_services[name]
-        if not services:
+        names = self.unique_names[name]
+        if not names:
             return
         
-        service = services[0]
-        if not service:
+        name = names[0]
+        if not name:
             return
 
         process_path = _util.get_proc_from_pid(id)
-        service.set_process_info(id, process_path)
+        name.set_process_info(id, process_path)
 
     def get_unix_process_id_error_cb(self, name, error):
         print error
@@ -271,24 +271,24 @@ class BusWatch(gtk.GenericTreeModel):
                 error_handler = lambda error: self.get_unix_process_id_error_cb(name, error))
 
 
-    def service_changed_cb(self, service):
-        path = (self.service_list.index(service,))
+    def name_changed_cb(self, name):
+        path = (self.name_list.index(name,))
         iter = self.get_iter(path)
         self.row_changed(path, iter)
 
-    # if name is not unique and owner is set add the name to the service
-    # else create a new service
-    def add_service(self, name, owner=None):
+    # if name is not unique and owner is set add the name to the BusName object
+    # else create a new BusName object
+    def add_name(self, name, owner=None):
         if name[0] == ':':
-            if self.unique_services.has_key(name):
+            if self.unique_names.has_key(name):
                 return
 
-            service = BusService(name, self.bus)
-            service.connect('changed', self.service_changed_cb)
-            self.unique_services[name] = [service]
+            busnameobj = BusName(name, self.bus)
+            busnameobj.connect('changed', self.name_changed_cb)
+            self.unique_names[name] = [busnameobj]
             self.get_unix_process_id_async_helper(name)
-            self.service_list.append(service)
-            path = (self.service_list.index(service),)
+            self.name_list.append(busnameobj)
+            path = (self.name_list.index(busnameobj),)
             iter = self.get_iter(path)
             self.row_inserted(path, iter) 
         else:
@@ -301,85 +301,85 @@ class BusWatch(gtk.GenericTreeModel):
             if not owner:
                 return
 
-            if self.unique_services.has_key(owner):
-                service = self.unique_services[owner][0]
-                if service.is_public():
-                    service = BusService(owner, self.bus, name, service)
-                    self.unique_services[owner].append(service)
-                    self.service_list.append(service)
-                    path = (self.service_list.index(service),)
+            if self.unique_names.has_key(owner):
+                busnameobj = self.unique_names[owner][0]
+                if busnameobj.is_public():
+                    busnameobj = BusName(owner, self.bus, name, busnameobj)
+                    self.unique_names[owner].append(busnameobj)
+                    self.name_list.append(busnameobj)
+                    path = (self.name_list.index(busnameobj),)
                     iter = self.get_iter(path)
                     self.row_inserted(path, iter)
                 else:
-                    service.set_common_name(name)
+                    busnameobj.set_common_name(name)
 
             else:
-                service = BusService(owner, self.bus, name)
-                self.unique_services[owner] = [service]
-                self.service_list.append(service)
+                busnameobj = BusName(owner, self.bus, name)
+                self.unique_names[owner] = [busnameobj]
+                self.name_list.append(busnameobj)
                 self.get_unix_process_id_async_helper(owner)
-                path = (self.service_list.index(service),)
+                path = (self.name_list.index(busnameobj),)
                 iter = self.get_iter(path)
                 self.row_inserted(path, iter)
 
-    def remove_service(self, name, owner=None):
+    def remove_name(self, name, owner=None):
         if not name:
             return
 
-        if self.unique_services.has_key(name):
-            services = self.unique_services[name]
-            for s in services:
-                self.remove_service(s.common_name, name)
+        if self.unique_names.has_key(name):
+            busnames = self.unique_names[name]
+            for n in busnames:
+                self.remove_name(n.common_name, name)
 
-            index = self.service_list.index(self.unique_services[name][0])
-            self.service_list.pop(index)
+            index = self.name_list.index(self.unique_names[name][0])
+            self.name_list.pop(index)
             
-            del(self.unique_services[name])
+            del(self.unique_names[name])
             self.row_deleted((index,))
         else:
             if not owner:
                 return
 
-            # service may have been deleted already
-            if self.unique_services.has_key(owner):
-                services = self.unique_services[owner]
-                if len(services) == 1:
-                    if services[0].common_name == name:
-                        services[0].clear_common_name()
-                        path = (self.service_list.index(services[0]),)
+            # names may have been deleted already
+            if self.unique_names.has_key(owner):
+                busnames = self.unique_names[owner]
+                if len(busnames) == 1:
+                    if busnames[0].common_name == name:
+                        busnames[0].clear_common_name()
+                        path = (self.name_list.index(busnames[0]),)
                         iter = self.get_iter(path)
                         self.row_changed(path, iter)
                 else:
-                    for s in services:
-                        if s.common_name == name:
-                            self.unique_services[owner].remove(s)
-                            index = self.service_list.index(s)
-                            self.service_list.pop(index)
+                    for n in busnames:
+                        if n.common_name == name:
+                            self.unique_names[owner].remove(n)
+                            index = self.name_list.index(n)
+                            self.name_list.pop(index)
                             self.row_deleted((index,))
 
     def name_owner_changed_cb(self, name, old_owner, new_owner):
         if name[0] == ':':
             if not old_owner:
-                self.add_service(name)
+                self.add_name(name)
             else:
-                self.remove_service(name)
+                self.remove_name(name)
 
         else :
             if new_owner:
-                self.add_service(name, new_owner)
+                self.add_name(name, new_owner)
             
             if old_owner:
-                self.remove_service(name, old_owner)
+                self.remove_name(name, old_owner)
 
     def list_names_handler(self, names):
-        for name in names:
-            self.add_service(name)
+        for n in names:
+            self.add_name(n)
 
     def list_names_error_handler(self, error):
-        print "error getting service names - %s" % str(error)
+        print "error getting bus names - %s" % str(error)
 
-    def get_service_list(self):
-        return self.service_list
+    def get_name_list(self):
+        return self.name_list
 
     def on_get_flags(self):
         return gtk.TREE_MODEL_ITERS_PERSIST
@@ -393,9 +393,9 @@ class BusWatch(gtk.GenericTreeModel):
     def on_get_iter(self, path):
         try:
             if len(path) == 1:
-                return (self.service_list[path[0]],)
+                return (self.name_list[path[0]],)
             else:
-                return (self.service_list[path[0]],path[1])
+                return (self.name_list[path[0]],path[1])
         except IndexError:
             return None
 
@@ -407,32 +407,32 @@ class BusWatch(gtk.GenericTreeModel):
             return (index, rowref[1])
 
     def on_get_value(self, rowref, column):
-        service = rowref[0]
+        name = rowref[0]
         child = -1
         if len(rowref) > 1:
             child = rowref[1]
 
-        if column == self.SERVICE_OBJ_COL:
-            return service
+        if column == self.BUSNAME_OBJ_COL:
+            return name 
         elif column == self.UNIQUE_NAME_COL:
-            return service.get_unique_name()
+            return name.get_unique_name()
         elif column == self.COMMON_NAME_COL:
-            return service.get_display_name()
+            return name.get_display_name()
         elif column == self.IS_PUBLIC_COL:
-            return service.is_public()
+            return name.is_public()
         elif column == self.PROCESS_ID_COL:
-            return service.get_process_id()
+            return name.get_process_id()
         elif column == self.PROCESS_PATH_COL:
-            return service.get_process_path()
+            return name.get_process_path()
         elif column == self.PROCESS_NAME_COL:
-            return service.get_process_name()
+            return name.get_process_name()
         elif column == self.DISPLAY_COL:
             if child == -1:
-                return '<b>' + gobject.markup_escape_text(service.get_display_name()) + '</b>'
+                return '<b>' + gobject.markup_escape_text(name.get_display_name()) + '</b>'
             elif child == 1:
-                return '<b>Process: </b>' + gobject.markup_escape_text(service.get_process_name()) + ' (' + gobject.markup_escape_text(str(service.get_process_id())) + ')' 
+                return '<b>Command Line: </b>' + gobject.markup_escape_text(name.get_process_name()) + ' (' + gobject.markup_escape_text(str(name.get_process_id())) + ')' 
             elif child == 0:
-                return '<b>Unique Name: </b>'+ gobject.markup_escape_text(service.get_unique_name())
+                return '<b>Unique Name: </b>'+ gobject.markup_escape_text(name.get_unique_name())
         else:
             raise InvalidColumnError(column) 
 
@@ -440,18 +440,18 @@ class BusWatch(gtk.GenericTreeModel):
 
     def on_iter_next(self, rowref):
         try:
-            service = rowref[0]
+            name = rowref[0]
             child = -1
             if len(rowref) == 2:
                 child = rowref[1]
 
             if child == 0:
-                return (service, child +1)
+                return (name, child +1)
             elif child == 1:
                 return None
             else:
-                i = self.service_list.index(rowref[0]) + 1
-                return (self.service_list[i],)
+                i = self.name_list.index(rowref[0]) + 1
+                return (self.name_list[i],)
         except IndexError:
             return None
 
@@ -462,7 +462,7 @@ class BusWatch(gtk.GenericTreeModel):
             else:
                 return None
 
-        return (self.service_list[0],)
+        return (self.name_list[0],)
 
     def on_iter_has_child(self, rowref):
         return False
@@ -478,7 +478,7 @@ class BusWatch(gtk.GenericTreeModel):
             else:
                 return None
 
-        return len(self.service_list)
+        return len(self.name_list)
 
     def on_iter_nth_child(self, parent, n):
         if parent:
@@ -487,7 +487,7 @@ class BusWatch(gtk.GenericTreeModel):
             else:
                 return None
         try:
-            return (self.service_list[n],)
+            return (self.name_list[n],)
         except IndexError:
             return None
 

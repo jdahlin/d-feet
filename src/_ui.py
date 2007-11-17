@@ -31,39 +31,39 @@ class BusBox(gtk.VBox):
 
         # Content
         self.paned = gtk.HPaned()
-        self.service_box = ServiceBox(watch)
-        self.service_info_box = ServiceInfoBox()
-        self.service_box.connect('service-selected', self.service_selected_cb)
+        self.busname_box = BusNameBox(watch)
+        self.busname_info_box = BusNameInfoBox()
+        self.busname_box.connect('busname-selected', self.busname_selected_cb)
 
-        self.paned.pack1(self.service_box)
-        self.paned.pack2(self.service_info_box)
+        self.paned.pack1(self.busname_box)
+        self.paned.pack2(self.busname_info_box)
         self.paned.set_position(200)
         self.pack_start(self.paned, True, True)
 
         xml.signal_autoconnect(signal_dict)
         
-    def service_selected_cb(self, service_box, service):
-        self.service_info_box.set_service(service)
+    def busname_selected_cb(self, busname_box, busname):
+        self.busname_info_box.set_busname(busname)
 
     def filter_entry_changed_cb(self, entry, button):
         value = entry.get_text()
         if value == '':
             value = None
 
-        self.service_box.set_filter_string(value)
+        self.busname_box.set_filter_string(value)
 
     def hide_private_toggled_cb(self, toggle):
-        self.service_box.set_hide_private(toggle.get_active())
+        self.busname_box.set_hide_private(toggle.get_active())
 
     def sort_combo_changed_cb(self, combo):
         value = combo.get_active_text()
-        self.service_box.set_sort_col(value)
+        self.busname_box.set_sort_col(value)
     
-class ServiceInfoBox(gtk.VBox):
+class BusNameInfoBox(gtk.VBox):
     def __init__(self):
-        super(ServiceInfoBox, self).__init__()
+        super(BusNameInfoBox, self).__init__()
 
-        self.service = None
+        self.busname = None
 
         xml = gtk.glade.XML(_util.get_glade_file(), 'info_table1')
         info_table = xml.get_widget('info_table1')
@@ -84,8 +84,8 @@ class ServiceInfoBox(gtk.VBox):
                                           self.row_collapsed_handler)
         self.introspect_tree_view.connect('row-expanded', 
                                           self.row_expanded_handler)
-        
-        self.introspect_tree_view.append_column(column)
+
+        self.introspect_tree_view.append_column(column)        
         self.introspection_box.remove(self.introspection_box.get_child())
         self.introspection_box.add(self.introspect_tree_view)
         self.introspect_tree_view.show_all()
@@ -103,7 +103,7 @@ class ServiceInfoBox(gtk.VBox):
 
         # TODO: Figure out what to do with signals
         if isinstance(node, Method):
-            dialog = ExecuteMethodDialog(self.service, node)
+            dialog = ExecuteMethodDialog(self.busname, node)
             dialog.run()
         else:
             if treeview.row_expanded(path):
@@ -127,25 +127,24 @@ class ServiceInfoBox(gtk.VBox):
             path = model.get_path(iter)
             treeview.expand_row(path, False)
 
-    def introspect_changed(self, service):
-        #print service.common_data._introspection_data
+    def introspect_changed(self, busname):
+        #print busname.common_data._introspection_data
         pass
 
-    def set_service(self, service):
-        if self.service:
-            self.service.disconnect(self.service._introspect_changed_signal_id)
+    def set_busname(self, busname):
+        if self.busname:
+            self.busname.disconnect(self.busname._introspect_changed_signal_id)
 
-        self.service = service
-
-        self.introspect_tree_view.set_model(service.common_data._introspection_data)
-        if self.service:
-            self.service.query_introspect()
-            self.service._introspect_changed_signal_id = self.service.connect('changed', self.introspect_changed)
+        self.busname = busname
+        self.introspect_tree_view.set_model(busname.common_data._introspection_data)
+        if self.busname:
+            self.busname.query_introspect()
+            self.busname._introspect_changed_signal_id = self.busname.connect('changed', self.introspect_changed)
 
         self.refresh()
 
     def clear(self):
-        self.service = None
+        self.busname = None
         self.refresh()
 
     def refresh(self):
@@ -153,10 +152,10 @@ class ServiceInfoBox(gtk.VBox):
         unique_name = ''
         process_path_str = ''
 
-        if self.service:
-            name = self.service.get_display_name()
-            unique_name = self.service.get_unique_name()
-            process_path = self.service.get_process_path()
+        if self.busname:
+            name = self.busname.get_display_name()
+            unique_name = self.busname.get_unique_name()
+            process_path = self.busname.get_process_path()
             process_path_str = ""
             if not process_path:
                 process_path_str = 'Unkown or Remote: This process can not be found and may be remote'
@@ -167,17 +166,17 @@ class ServiceInfoBox(gtk.VBox):
         self.unique_name_label.set_text(unique_name)
         self.process_label.set_text(process_path_str)
 
-class ServiceBox(gtk.VBox):
+class BusNameBox(gtk.VBox):
     __gsignals__ = {
-        'service-selected' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+        'busname-selected' : (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
                              (gobject.TYPE_PYOBJECT,))
                    }
 
     def __init__(self, watch):
-        super(ServiceBox, self).__init__()
+        super(BusNameBox, self).__init__()
 
-        self.tree_view = ServiceView(watch)
-        self.tree_view.connect('cursor_changed', self.service_selected_cb)
+        self.tree_view = BusNameView(watch)
+        self.tree_view.connect('cursor_changed', self.busname_selected_cb)
 
         scroll = gtk.ScrolledWindow()
         scroll.add(self.tree_view)
@@ -190,13 +189,13 @@ class ServiceBox(gtk.VBox):
         return self.tree_view._is_iter_equal(completion.get_model(),
                                             iter, key)
 
-    def service_selected_cb(self, treeview):
+    def busname_selected_cb(self, treeview):
         (model, iter) = treeview.get_selection().get_selected()
         if not iter:
             return
 
-        service = model.get_value(iter, BusWatch.SERVICE_OBJ_COL)
-        self.emit('service-selected', service)
+        busname = model.get_value(iter, BusWatch.BUSNAME_OBJ_COL)
+        self.emit('busname-selected', busname)
 
     def set_filter_string(self, value):
         self.tree_view.set_filter_string(value)
@@ -219,9 +218,9 @@ class ServiceBox(gtk.VBox):
         self.tree_view.set_sort_column(col)
         #self.tree_view.sort_column_changed()
 
-class ServiceView(gtk.TreeView):
+class BusNameView(gtk.TreeView):
     def __init__(self, watch):
-        super(ServiceView, self).__init__()
+        super(BusNameView, self).__init__()
 
         self.hide_private = False
         self.filter_string = None
@@ -239,7 +238,7 @@ class ServiceView(gtk.TreeView):
         self.sort_model.set_sort_func(self.watch.COMMON_NAME_COL, self._sort_on_name, self.watch.COMMON_NAME_COL)
 
         renderer = gtk.CellRendererText()
-        column = gtk.TreeViewColumn("Service Name", 
+        column = gtk.TreeViewColumn("Bus Name", 
                                     renderer, 
                                     markup=watch.DISPLAY_COL
                                     )
@@ -247,6 +246,7 @@ class ServiceView(gtk.TreeView):
         column.set_sort_column_id(watch.COMMON_NAME_COL)
         self.append_column(column)
 
+        """
         column = gtk.TreeViewColumn("Unique Name", 
                                     renderer, 
                                     text=watch.UNIQUE_NAME_COL
@@ -254,8 +254,9 @@ class ServiceView(gtk.TreeView):
         column.set_resizable(True)
         column.set_sort_column_id(watch.UNIQUE_NAME_COL)
         self.append_column(column)
+        """
 
-        column = gtk.TreeViewColumn("Process Name", 
+        column = gtk.TreeViewColumn("Process", 
                                     renderer, 
                                     text=watch.PROCESS_NAME_COL
                                     )
@@ -263,6 +264,7 @@ class ServiceView(gtk.TreeView):
         column.set_sort_column_id(watch.PROCESS_NAME_COL)
         self.append_column(column)
 
+        """
         column = gtk.TreeViewColumn("PID", 
                                     renderer, 
                                     text=watch.PROCESS_ID_COL
@@ -270,7 +272,7 @@ class ServiceView(gtk.TreeView):
         column.set_resizable(True)
         column.set_sort_column_id(watch.PROCESS_ID_COL)
         self.append_column(column)
-
+        """
 
         self.set_headers_clickable(True)
         self.set_reorderable(True)
@@ -359,7 +361,7 @@ class ServiceView(gtk.TreeView):
             return -1
 
 class ExecuteMethodDialog:
-    def __init__(self, service, method):
+    def __init__(self, busname, method):
         signal_dict = { 
                         'execute_dbus_method_cb' : self.execute_cb,
                         'execute_dialog_close_cb': self.close_cb
@@ -378,7 +380,7 @@ class ExecuteMethodDialog:
                                          'Pretty Print')
         xml.signal_autoconnect(signal_dict)
 
-        self.service = service
+        self.busname = busname
         self.method = method
 
         # FIXME: get the interface and object path
@@ -396,8 +398,8 @@ class ExecuteMethodDialog:
                 params = '(' + params + ',)'
                 args = eval(params)
 
-            result = self.method.dbus_call(self.service.get_bus(), 
-                              self.service.get_display_name(),
+            result = self.method.dbus_call(self.busname.get_bus(), 
+                              self.busname.get_display_name(),
                               *args)
         except Exception, e: # FIXME: treat D-Bus errors differently
                              #        from parameter errors?
