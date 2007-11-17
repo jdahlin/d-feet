@@ -8,20 +8,56 @@ import _util
 from dbus_introspector import BusWatch
 from introspect_data import IntrospectData, Method, Signal
 
-class BusPaned(gtk.VPaned):
+class BusBox(gtk.VBox):
     def __init__(self, watch):
-        super(BusPaned, self).__init__()
+        super(BusBox, self).__init__()
 
+        # FilterBox
+        signal_dict = { 
+                        'hide_private_toggled' : self.hide_private_toggled_cb,
+                        'filter_entry_changed': self.filter_entry_changed_cb
+                      } 
+
+        xml = gtk.glade.XML(_util.get_glade_file(), 'sort_and_filter_table1')
+        filter_box = xml.get_widget('sort_and_filter_table1')
+        filter_entry = xml.get_widget('filter_entry1')
+        self.pack_start(filter_box, False, False)
+
+        self.completion = gtk.EntryCompletion()
+        self.completion.set_model(watch)
+        self.completion.set_inline_completion(True)
+        self.completion.set_inline_selection(True)
+        filter_entry.set_completion(self.completion)
+
+        # Content
+        self.paned = gtk.HPaned()
         self.service_box = ServiceBox(watch)
         self.service_info_box = ServiceInfoBox()
         self.service_box.connect('service-selected', self.service_selected_cb)
 
-        self.pack1(self.service_box)
-        self.pack2(self.service_info_box)
-        self.set_position(200)
+        self.paned.pack1(self.service_box)
+        self.paned.pack2(self.service_info_box)
+        self.paned.set_position(200)
+        self.pack_start(self.paned, True, True)
 
+        xml.signal_autoconnect(signal_dict)
+        
     def service_selected_cb(self, service_box, service):
         self.service_info_box.set_service(service)
+
+    def filter_entry_changed_cb(self, entry, button):
+        value = entry.get_text()
+        if value == '':
+            value = None
+
+        self.service_box.set_filter_string(value)
+
+    def hide_private_toggled_cb(self, toggle):
+        self.service_box.set_hide_private(toggle.get_active())
+
+    def sort_combo_changed_cb(self, combo):
+        value = combo.get_active_text()
+        self.service_box.set_sort_col(value)
     
 class ServiceInfoBox(gtk.VBox):
     def __init__(self):
@@ -140,31 +176,12 @@ class ServiceBox(gtk.VBox):
     def __init__(self, watch):
         super(ServiceBox, self).__init__()
 
-        signal_dict = { 
-                        'hide_private_toggled' : self.hide_private_toggled_cb,
-                        'filter_entry_changed': self.filter_entry_changed_cb
-                      } 
-
-        xml = gtk.glade.XML(_util.get_glade_file(), 'sort_and_filter_table1')
-        filter_box = xml.get_widget('sort_and_filter_table1')
-        filter_entry = xml.get_widget('filter_entry1')
-        self.pack_start(filter_box, False, False)
-
         self.tree_view = ServiceView(watch)
         self.tree_view.connect('cursor_changed', self.service_selected_cb)
-
-        self.completion = gtk.EntryCompletion()
-        self.completion.set_model(watch)
-        self.completion.set_match_func(self._completion_match_func)
-        self.completion.set_inline_completion(True)
-        self.completion.set_inline_selection(True)
-        filter_entry.set_completion(self.completion)
 
         scroll = gtk.ScrolledWindow()
         scroll.add(self.tree_view)
         self.pack_start(scroll, True, True)
-
-        xml.signal_autoconnect(signal_dict)
 
         self.show_all()
 
@@ -181,20 +198,15 @@ class ServiceBox(gtk.VBox):
         service = model.get_value(iter, BusWatch.SERVICE_OBJ_COL)
         self.emit('service-selected', service)
 
-    def filter_entry_changed_cb(self, entry, button):
-        value = entry.get_text()
-        if value == '':
-            value = None
-
+    def set_filter_string(self, value):
         self.tree_view.set_filter_string(value)
         self.tree_view.refilter()
 
-    def hide_private_toggled_cb(self, toggle):
+    def set_hide_private(self, toggle):
         self.tree_view.set_hide_private(toggle.get_active())
         self.tree_view.refilter()
 
-    def sort_combo_changed_cb(self, combo):
-        value = combo.get_active_text()
+    def set_sort_col(self, value):
         if value == 'Common Name':
             col = BusWatch.COMMON_NAME_COL
         elif value == 'Unique Name':

@@ -20,8 +20,8 @@ def main(args):
     main_window = glade_xml.get_widget('appwindow1')
     main_window.connect('destroy',gtk.main_quit)
 
-    session_bus_paned = _ui.BusPaned(session_bus_watch)
-    system_bus_paned = _ui.BusPaned(system_bus_watch)    
+    session_bus_paned = _ui.BusBox(session_bus_watch)
+    system_bus_paned = _ui.BusBox(system_bus_watch)    
 
     notebook = glade_xml.get_widget('display_notebook')
     notebook.append_page(session_bus_paned, gtk.Label('Session Bus'))
