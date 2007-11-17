@@ -70,7 +70,7 @@ class BusNameInfoBox(gtk.VBox):
         self.name_label = xml.get_widget('name_label1')
         self.unique_name_label = xml.get_widget('unique_name_label1')
         self.process_label = xml.get_widget('process_label1')
-        self.introspection_box = xml.get_widget('introspect_scrolledwindow1')
+        self.introspection_box = xml.get_widget('introspect_box1')
 
         self.introspect_tree_view = gtk.TreeView()
         renderer = gtk.CellRendererText()
@@ -85,9 +85,15 @@ class BusNameInfoBox(gtk.VBox):
         self.introspect_tree_view.connect('row-expanded', 
                                           self.row_expanded_handler)
 
-        self.introspect_tree_view.append_column(column)        
-        self.introspection_box.remove(self.introspection_box.get_child())
-        self.introspection_box.add(self.introspect_tree_view)
+        self.introspect_tree_view.append_column(column) 
+        
+        scroll = gtk.ScrolledWindow()
+        scroll.add(self.introspect_tree_view)
+        self.introspection_box.pack_start(scroll,
+                                          True, True)
+
+        scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+
         self.introspect_tree_view.show_all()
 
         self.add(info_table)
@@ -181,6 +187,7 @@ class BusNameBox(gtk.VBox):
         scroll = gtk.ScrolledWindow()
         scroll.add(self.tree_view)
         self.pack_start(scroll, True, True)
+        scroll.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
 
         self.show_all()
 
