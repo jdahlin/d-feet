@@ -5,6 +5,8 @@ from subprocess import *
 import os
 import glob
 
+DFEET_VERSION=0.1.2
+
 #Create an array with all the locale filenames
 I18NFILES = []
 for filepath in glob.glob("locale/*/LC_MESSAGES/*.mo"):
@@ -38,7 +40,7 @@ else:
     OMFFILES.append((omfdir, glob.glob("help/dfeet/*.omf")))
         
 dist = setup(name='d-feet',
-    version='0.1.1',
+    version=DFEET_VERSION,
     author='John (J5) Palmieri',
     author_email='johnp@redhat.com',
     maintainer='John (J5) Palmieri',
