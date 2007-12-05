@@ -28,7 +28,7 @@ class Settings:
         
         Parameters:
             filename -- path to the settings file.
-                        If None, the default ~/.jokosher/config will be used.
+                        If None, the default ~/.dfeet/config will be used.
         """
         if not filename:
             self.filename = os.path.expanduser("~/.d-feet/config")

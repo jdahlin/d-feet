@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=0.1
+Encoding=UTF-8
+Name=D-Feet D-Bus Debugger
+GenericName=D-Bus Debugger
+Comment=Debug D-Bus applications
+Exec=d-feet
+Icon=dfeet-icon.png
+Terminal=false
+Type=Application
+MimeType=application/x-dfeet;
+Categories=Application;Programming;
+GenericName[en_CA]=D-Feet D-Bus Debugger

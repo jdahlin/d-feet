@@ -417,7 +417,7 @@ class BusWatch(gtk.GenericTreeModel):
         elif column == self.UNIQUE_NAME_COL:
             return name.get_unique_name()
         elif column == self.COMMON_NAME_COL:
-            return name.get_display_name()
+            return name.get_common_name()
         elif column == self.IS_PUBLIC_COL:
             return name.is_public()
         elif column == self.PROCESS_ID_COL:

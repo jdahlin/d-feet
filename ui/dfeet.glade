@@ -12,6 +12,9 @@
                 </child>
             </widget>
         </child>
+        <ui id="initial-state"><![CDATA[<ui>
+<menubar action="menubar1" name="menubar1"/><toolbar action="toolbar1" name="toolbar1"/>
+</ui>]]></ui>
     </widget>
     <widget class="GtkWindow" id="appwindow1">
         <property name="default_height">480</property>
@@ -23,6 +26,24 @@
             <widget class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
                 <child>
+                    <widget constructor="initial-state" class="GtkMenuBar" id="menubar1">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget constructor="initial-state" class="GtkToolbar" id="toolbar1">
+                        <property name="toolbar_style">both-horiz</property>
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+                <child>
                     <widget class="GtkNotebook" id="display_notebook">
                         <property name="enable_popup">True</property>
                         <property name="is_focus">True</property>
@@ -33,6 +54,9 @@
                             <packing/>
                         </child>
                     </widget>
+                    <packing>
+                        <property name="position">2</property>
+                    </packing>
                 </child>
                 <child>
                     <widget class="GtkStatusbar" id="statusbar1">
@@ -41,7 +65,7 @@
                     <packing>
                         <property name="expand">False</property>
                         <property name="pack_type">end</property>
-                        <property name="position">1</property>
+                        <property name="position">3</property>
                     </packing>
                 </child>
             </widget>

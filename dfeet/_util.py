@@ -16,7 +16,11 @@ def get_proc_from_pid(pid):
 
 # TODO: figure out more robust way to do this
 def get_glade_file():
-    glade_dir = os.environ['GLADE_DIR']
+    try:
+        glade_dir = os.environ['DFEET_DATA_PATH']
+    except:
+        glade_dir = "../ui"
+
     glade_file = glade_dir + '/dfeet.glade'
     return glade_file
 

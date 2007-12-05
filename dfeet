@@ -1,6 +1,0 @@
-#!/bin/bash
-
-GLADE_DIR=`pwd`/ui
-export GLADE_DIR
-
-(cd src; python main.py)
