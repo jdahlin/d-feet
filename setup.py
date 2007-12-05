@@ -56,8 +56,6 @@ dist = setup(name='d-feet',
     data_files=[
         ('share/dfeet', glob.glob("ui/*.glade")),
         ('share/icons/hicolor/48x48/apps', ['ui/dfeet-icon.png']),
-        ('share/pixmaps', ['ui/dfeet-icon.png']),
-        ('share/dfeet/pixmaps', glob.glob("ui/*.png")),
         ('share/applications', ['ui/dfeet.desktop']),
         ]+I18NFILES+HELPDOCS+HELPIMAGES+OMFFILES
 )
