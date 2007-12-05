@@ -38,7 +38,7 @@ else:
     OMFFILES.append((omfdir, glob.glob("help/dfeet/*.omf")))
         
 dist = setup(name='d-feet',
-    version='0.1',
+    version='0.1.1',
     author='John (J5) Palmieri',
     author_email='johnp@redhat.com',
     maintainer='John (J5) Palmieri',
