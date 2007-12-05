@@ -1,0 +1,20 @@
+Welcome to D-Feet (http://hosted.fedoraproject.org/projects/d-feet)
+
+Requirements:
+
+D-Bus > 1.0
+D-Bus Python > 0.82.3
+PyGtk
+Python 2.5
+
+To run localy for testing:
+
+./d-feet --local-dirs
+
+or
+
+./d-feet -l
+
+To install:
+
+setup.py install

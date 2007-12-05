@@ -1,0 +1,6 @@
+include AUTHORS COPYING 
+recursive-include ui *.png *.glade *.desktop 
+recursive-include locale */LC_MESSAGES/dfeet.mo
+recursive-include help *.omf *.xml *.png
+prune locale/src
+
