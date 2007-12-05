@@ -9,5 +9,5 @@ Icon=dfeet-icon.png
 Terminal=false
 Type=Application
 MimeType=application/x-dfeet;
-Categories=Application;Programming;
+Categories=GNOME;GTK;Development;
 GenericName[en_CA]=D-Feet D-Bus Debugger
