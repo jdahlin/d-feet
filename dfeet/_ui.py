@@ -26,7 +26,14 @@ class BusBox(gtk.VBox):
         self.completion = gtk.EntryCompletion()
         self.completion.set_model(watch)
         self.completion.set_inline_completion(True)
-        self.completion.set_inline_selection(True)
+
+        # older gtk+ does not support this method call
+        # but it is not fatal
+        try:
+            self.completion.set_inline_selection(True)
+        except:
+            pass
+
         filter_entry.set_completion(self.completion)
 
         # Content
