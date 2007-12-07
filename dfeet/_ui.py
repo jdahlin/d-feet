@@ -241,8 +241,7 @@ class BusNameView(gtk.TreeView):
         
         self.sort_model = gtk.TreeModelSort(self.filter_model)
         self.sort_model.set_sort_column_id(self.watch.COMMON_NAME_COL, gtk.SORT_ASCENDING)
-        self.sort_model.set_sort_func(self.watch.UNIQUE_NAME_COL, self._sort_on_name, self.watch.UNIQUE_NAME_COL)
-        self.sort_model.set_sort_func(self.watch.COMMON_NAME_COL, self._sort_on_name, self.watch.COMMON_NAME_COL)
+        self.sort_model.set_sort_func(self.watch.COMMON_NAME_COL, self._sort_on_name, (self.watch.COMMON_NAME_COL, self.watch.UNIQUE_NAME_COL))
 
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("Bus Name", 
@@ -338,19 +337,25 @@ class BusNameView(gtk.TreeView):
     def _filter_cb(self, model, iter):
         return self._is_iter_equal(model, iter, self.filter_string)
 
-    def _sort_on_name(self, model, iter1, iter2, col):
+    def _sort_on_name(self, model, iter1, iter2, cols):
+        (col, alt_col) = cols
+
         un1 = model.get_value(iter1, col)
         un2 = model.get_value(iter2, col)
 
-        # covert to integers if comparing two unique names
-        if un1[0] == ':' and un2[0] == ':':
-            if un1:
-                un1 = un1[1:].split('.')
-                un1 = tuple(map(int, un1))
+        if not un1:
+            un1 = model.get_value(iter1, alt_col)
+        
+        if not un2:
+            un2 = model.get_value(iter2, alt_col)
 
-            if un2:
-                un2 = un2[1:].split('.')
-                un2 = tuple(map(int, un2))
+        # covert to integers if comparing two unique names        
+        if un1[0] == ':' and un2[0] == ':':
+           un1 = un1[1:].split('.')
+           un1 = tuple(map(int, un1))
+
+           un2 = un2[1:].split('.')
+           un2 = tuple(map(int, un2))
 
         elif un1[0] == ':' and un2[0] != ':':
             return 1
