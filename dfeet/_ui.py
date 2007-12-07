@@ -53,7 +53,13 @@ class BusBox(gtk.VBox):
         self.busname_box.set_filter_string(value)
 
     def hide_private_toggled_cb(self, toggle):
-        self.busname_box.set_hide_private(toggle.get_active())
+        a = toggle.get_active()
+        if a:
+            toggle.set_label("Show Private")
+        else:
+            toggle.set_label("Hide Private")
+
+        self.busname_box.set_hide_private(a)
 
     def sort_combo_changed_cb(self, combo):
         value = combo.get_active_text()
@@ -208,8 +214,8 @@ class BusNameBox(gtk.VBox):
         self.tree_view.set_filter_string(value)
         self.tree_view.refilter()
 
-    def set_hide_private(self, toggle):
-        self.tree_view.set_hide_private(toggle.get_active())
+    def set_hide_private(self, hide_private):
+        self.tree_view.set_hide_private(hide_private)
         self.tree_view.refilter()
 
     def set_sort_col(self, value):
