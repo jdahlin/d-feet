@@ -234,6 +234,25 @@ class Signal(Node):
 
         return result
 
+class Property(Node):
+    # tree path = (0,x,0,y,2,z)
+    def __init__(self, model, parent, property, insig):
+        self.property = property
+        self.insig = insig
+
+        Node.__init__(self, model, parent)
+
+    def dbus_call(self, bus, name, *args):
+        # for testing out properties
+        # this is not implemented yet
+        pass
+
+    def __str__(self):
+        result = self.property + '('
+        result += dbus_utils.sig_to_string(self.insig) + ')'
+
+        return result
+
 class MethodLabel(Node):
     # tree path = (0,x,0,y,0)
     def __init__(self, model, parent):
@@ -274,6 +293,26 @@ class SignalLabel(Node):
     def __str__(self):
         return self._label
 
+class PropertyLabel(Node):
+    # tree path = (0,x,0,y,2)
+    def __init__(self, model, parent):
+        Node.__init__(self, model, parent)
+        self.set_expanded(True)
+        self._label = 'Properties'
+
+    def add(self, data):
+        property_list = data.keys()
+        property_list.sort()
+        for property_name in property_list:
+            property = Property(self.model, self, property_name, data[property_name])
+            self._add_child(property, None)
+
+    def to_markup_str(self):
+        return '<b>' + gobject.markup_escape_text(self._label) + '</b>'
+
+    def __str__(self):
+        return self._label
+
 class Interface(Node):
     # tree path = (0,x,0,y)
     def __init__(self, model, parent, interface):
@@ -283,12 +322,16 @@ class Interface(Node):
     def add(self, data):
         method_data = data['methods']
         signal_data = data['signals']
+        property_data = data['properties']
 
         methods = MethodLabel(self.model, self)
         self._add_child(methods, method_data)
 
         signals = SignalLabel(self.model, self)
         self._add_child(signals, signal_data)
+
+        properties = PropertyLabel(self.model, self)
+        self._add_child(properties, property_data)
 
     def __str__(self):
         return self.iface
@@ -367,8 +410,10 @@ class IntrospectData(gtk.GenericTreeModel):
         (0,x,0,y)     - interface
         (0,x,0,y,0)   - "Methods"
         (0,x,0,y,1)   - "Signals"
+        (0,x,0,y,2)   - "Properties"
         (0,x,0,y,0,z) - method signature
         (0,x,0,y,1,z) - signal signature
+        (0,x,0,y,1,z) - property signature
     
     """ 
     
