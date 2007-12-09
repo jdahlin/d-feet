@@ -22,6 +22,7 @@ class DFeetApp:
         glade_xml = gtk.glade.XML(_util.get_glade_file(), 'appwindow1')
 
         main_window = glade_xml.get_widget('appwindow1')
+        main_window.set_icon_name('dfeet-icon')
         main_window.connect('delete-event', self._quit_dfeet)
 
         session_bus_paned = _ui.BusBox(session_bus_watch)
