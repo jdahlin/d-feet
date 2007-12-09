@@ -7,6 +7,10 @@ D-Bus Python > 0.82.3
 PyGtk
 Python 2.5
 
+Optional Requriements:
+
+gnome-python-libwnck - for displaying application icons next to the application 
+
 To run localy for testing:
 
 ./d-feet --local-dirs

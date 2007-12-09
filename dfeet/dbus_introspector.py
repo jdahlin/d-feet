@@ -5,6 +5,7 @@ import gtk
 import _util
 import _introspect_parser 
 import os
+import _ui.wnck_utils
 
 from introspect_data import IntrospectData
 
@@ -137,6 +138,10 @@ class BusName(gobject.GObject):
 
         return result
 
+    def get_icon(self):
+        icon_table = _ui.wnck_utils.IconTable.get_instance()
+        return icon_table.get_icon(self.get_process_id())    
+
     def get_bus(self):
         return self.common_data.bus
 
@@ -194,7 +199,7 @@ class BusName(gobject.GObject):
         return result 
 
 class BusWatch(gtk.GenericTreeModel):
-    NUM_COL = 8 
+    NUM_COL = 9 
 
     (BUSNAME_OBJ_COL, 
      UNIQUE_NAME_COL,
@@ -203,7 +208,8 @@ class BusWatch(gtk.GenericTreeModel):
      PROCESS_ID_COL,
      PROCESS_PATH_COL,
      PROCESS_NAME_COL,
-     DISPLAY_COL) = range(NUM_COL)
+     DISPLAY_COL,
+     ICON_COL) = range(NUM_COL)
 
     COL_TYPES = (gobject.TYPE_PYOBJECT,
                  gobject.TYPE_STRING,
@@ -212,7 +218,8 @@ class BusWatch(gtk.GenericTreeModel):
                  gobject.TYPE_STRING,
                  gobject.TYPE_PYOBJECT,
                  gobject.TYPE_STRING,
-                 gobject.TYPE_STRING)
+                 gobject.TYPE_STRING,
+                 gtk.gdk.Pixbuf)
 
     def __init__(self, bus, address=None):
         self.bus = None
@@ -426,6 +433,8 @@ class BusWatch(gtk.GenericTreeModel):
             return name.get_process_path()
         elif column == self.PROCESS_NAME_COL:
             return name.get_process_name()
+        elif column == self.ICON_COL:
+            return name.get_icon()
         elif column == self.DISPLAY_COL:
             if child == -1:
                 return '<b>' + gobject.markup_escape_text(name.get_display_name()) + '</b>'

@@ -10,8 +10,8 @@ class BusNameView(gtk.TreeView):
         self.hide_private = False
         self.filter_string = None
 
-        self.set_property('enable-tree-lines', True)
         self.set_property('enable-search', True)
+        self.set_property('enable-grid-lines', False)
         self.watch = watch
        
         self.filter_model = self.watch.filter_new()
@@ -20,6 +20,15 @@ class BusNameView(gtk.TreeView):
         self.sort_model = gtk.TreeModelSort(self.filter_model)
         self.sort_model.set_sort_column_id(self.watch.COMMON_NAME_COL, gtk.SORT_ASCENDING)
         self.sort_model.set_sort_func(self.watch.COMMON_NAME_COL, self._sort_on_name, (self.watch.COMMON_NAME_COL, self.watch.UNIQUE_NAME_COL))
+
+        renderer = gtk.CellRendererPixbuf()
+        column = gtk.TreeViewColumn("", 
+                                    renderer, 
+                                    pixbuf=watch.ICON_COL
+                                    )
+        column.set_resizable(False)
+        column.set_sort_column_id(watch.PROCESS_ID_COL)
+        self.append_column(column)
 
         renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("Bus Name", 
@@ -59,7 +68,7 @@ class BusNameView(gtk.TreeView):
         """
 
         self.set_headers_clickable(True)
-        self.set_reorderable(True)
+        self.set_reorderable(False)
         self.set_search_equal_func(self._search_cb)
         self.set_model(self.sort_model)
 
