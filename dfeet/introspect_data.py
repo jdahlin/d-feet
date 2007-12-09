@@ -324,14 +324,17 @@ class Interface(Node):
         signal_data = data['signals']
         property_data = data['properties']
 
-        methods = MethodLabel(self.model, self)
-        self._add_child(methods, method_data)
+        if method_data:
+            methods = MethodLabel(self.model, self)
+            self._add_child(methods, method_data)
 
-        signals = SignalLabel(self.model, self)
-        self._add_child(signals, signal_data)
+        if signal_data:
+            signals = SignalLabel(self.model, self)
+            self._add_child(signals, signal_data)
 
-        properties = PropertyLabel(self.model, self)
-        self._add_child(properties, property_data)
+        if property_data:
+            properties = PropertyLabel(self.model, self)
+            self._add_child(properties, property_data)
 
     def __str__(self):
         return self.iface
