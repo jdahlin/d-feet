@@ -5,7 +5,7 @@ from subprocess import *
 import os
 import glob
 
-DFEET_VERSION='0.1.4'
+DFEET_VERSION='0.1.5'
 
 #Create an array with all the locale filenames
 I18NFILES = []
@@ -52,7 +52,7 @@ dist = setup(name='d-feet',
     license='GNU GPL',
     platforms='linux',
     scripts=['d-feet'],
-    packages=['dfeet'],
+    packages=['dfeet', 'dfeet/_ui'],
     data_files=[
         ('share/dfeet', glob.glob("ui/*.glade")),
         ('share/icons/hicolor/48x48/apps', ['ui/dfeet-icon.png']),
