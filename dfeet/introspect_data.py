@@ -210,7 +210,7 @@ class Method(Node):
         result += dbus_utils.sig_to_string(self.insig) + ')'
         
         if self.outsig:
-            result += ' -> (' +  dbus_utils.sig_to_string(self.outsig) + ')'
+            result += u' \u27A1 (' +  dbus_utils.sig_to_string(self.outsig) + ')'
             
         return result
 
