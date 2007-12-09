@@ -50,5 +50,15 @@ def type_list_to_string(type_list):
 
     return result
 
+def sig_to_markup(sig, span_attr_str):
+    list = sig_to_type_list(sig)
+    markedup_list = []
+    for dbus_type in list:
+        m = '<span ' + span_attr_str + '>'
+        m += dbus_type + '</span>'
+        markedup_list.append(m)
+
+    return type_list_to_string(markedup_list)
+
 def sig_to_string(sig):
     return type_list_to_string(sig_to_type_list(sig))

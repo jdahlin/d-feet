@@ -205,6 +205,20 @@ class Method(Node):
         
         return func(*args)
 
+    def to_markup_str(self):
+        sig_props = 'foreground="#2E8B57" size="smaller"'
+        result = self.method + '<span foreground="#FF00FF">(</span>'
+        result += dbus_utils.sig_to_markup(self.insig, sig_props)
+        result += '<span foreground="#FF00FF">)</span>'
+
+        if self.outsig:
+            result += '<span foreground="#A52A2A">' + u' \u27A1 ' + '</span>'
+            result += '<span foreground="#FF00FF">(</span>' 
+            result += dbus_utils.sig_to_markup(self.outsig, sig_props)
+            result += '<span foreground="#FF00FF">)</span>'
+
+        return result
+
     def __str__(self):
         result = self.method + '('
         result += dbus_utils.sig_to_string(self.insig) + ')'
@@ -227,6 +241,14 @@ class Signal(Node):
         # this actually isn't going to work since I
         # can't spoof the sender unless I can own the name
         pass
+
+    def to_markup_str(self):
+        sig_props = 'foreground="#2E8B57" size="smaller"'
+        result = self.signal + '<span foreground="#FF00FF">(</span>'
+        result += dbus_utils.sig_to_markup(self.insig, sig_props)
+        result += '<span foreground="#FF00FF">)</span>'
+
+        return result
 
     def __str__(self):
         result = self.signal + '('
