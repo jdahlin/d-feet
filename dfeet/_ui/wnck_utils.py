@@ -35,10 +35,16 @@ class IconTable:
                     self.app_map[pid] = icon
 
     def on_app_open(self, screen, app):
-        self.app_map[app.get_pid()] = app.get_mini_icon()
+        icon = app.get_mini_icon()
+        if icon:
+            self.app_map[app.get_pid()] = icon
 
     def on_app_close(self, screen, app):
+        return # this is a leak but some apps still exist even if all their
+               # top level windows don't.  We need to have a better cleanup
+               # based on when an app's services go away  
         pid = app.get_pid()
+
         if self.app_map.has_key(pid):
             del self.app_map[pid]
 
