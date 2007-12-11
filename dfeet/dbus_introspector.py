@@ -11,6 +11,7 @@ from introspect_data import IntrospectData
 
 SESSION_BUS = 1
 SYSTEM_BUS = 2
+ADDRESS_BUS = 3
 
 dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
@@ -225,6 +226,8 @@ class BusWatch(gtk.GenericTreeModel):
         self.bus = None
         self.unique_names = {}
         self.name_list = []
+        self.bus_type = bus
+        self.address = address
         #self.completion_model = gtk.ListStore()
 
         super(BusWatch, self).__init__()
@@ -251,6 +254,14 @@ class BusWatch(gtk.GenericTreeModel):
 
         self.bus_interface.ListNames(reply_handler=self.list_names_handler,
                                      error_handler=self.list_names_error_handler)
+
+    def get_bus_name(self):
+        if self.bus_type == SESSION_BUS:
+            return "Session Bus"
+        elif self.bus_type == SYSTEM_BUS:
+            return "System Bus"
+        else:
+            return self.address
 
     def get_completion_model(self):
         return self.completion_model()

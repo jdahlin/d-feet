@@ -19,7 +19,8 @@ class Settings:
     general =   {
                 "windowheight" : 550,
                 "windowwidth" : 900,
-                "windowstate" : None
+                "windowstate" : None,
+                "bustabs_list" : []
                 }
     
     def __init__(self, filename = None):
@@ -58,6 +59,9 @@ class Settings:
             self.config.add_section("General")
     
         for key, value in self.config.items("General"):
+            if key.endswith('list'):
+                value = value.split(',')
+
             self.general[key] = value
     
     def write(self):
@@ -65,6 +69,9 @@ class Settings:
         Writes configuration settings to the Settings config file.
         """        
         for key in self.general:
+            if key.endswith('list'):
+                self.general[key] = ','.join(self.general[key])
+                  
             self.config.set("General", key, self.general[key])
             
         # make sure that the directory that the config file is in exists

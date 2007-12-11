@@ -8,7 +8,6 @@ from busnamebox import BusNameBox
 from busnameinfobox import BusNameInfoBox
 from uiloader import UILoader
 
-
 class BusBox(gtk.VBox):
     def __init__(self, watch):
         super(BusBox, self).__init__()
@@ -18,6 +17,9 @@ class BusBox(gtk.VBox):
                         'hide_private_toggled' : self.hide_private_toggled_cb,
                         'filter_entry_changed': self.filter_entry_changed_cb
                       } 
+
+
+        self.bus_watch = watch
 
         ui = UILoader(UILoader.UI_FILTERBOX)
         filter_box = ui.get_root_widget()
@@ -74,3 +76,5 @@ class BusBox(gtk.VBox):
         value = combo.get_active_text()
         self.busname_box.set_sort_col(value)
 
+    def get_bus_watch(self):
+        return self.bus_watch

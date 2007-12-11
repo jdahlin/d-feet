@@ -16,6 +16,7 @@
             <property name="short_label" translatable="yes">Bus...</property>
             <property name="tooltip" translatable="yes">Add a bus tab using an address</property>
             <property name="stock_id">gtk-add</property>
+            <signal handler="add_bus_address" name="activate"/>
           </object>
         </child>
         <child>
@@ -24,6 +25,7 @@
             <property name="label" translatable="yes">Connect to S_ession Bus</property>
             <property name="short_label" translatable="yes">Session</property>
             <property name="tooltip" translatable="yes">Add a session bus tab</property>
+            <signal handler="add_session_bus" name="activate"/>
           </object>
         </child>
         <child>
@@ -32,6 +34,7 @@
             <property name="label" translatable="yes">Connect to S_ystem Bus</property>
             <property name="short_label" translatable="yes">System</property>
             <property name="tooltip" translatable="yes">Add a system bus tab</property>
+            <signal handler="add_system_bus" name="activate"/>
           </object>
         </child>
       </object>
