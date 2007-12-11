@@ -1,7 +1,6 @@
 import os
 import sys
 import gtk
-import gtk.glade
 import gobject 
 import _ui
 import _util
@@ -9,6 +8,7 @@ import _util
 import dbus_introspector
 from dbus_introspector import BusWatch
 from settings import Settings
+from _ui.uiloader import UILoader
 
 class DFeetApp:
     global session_bus_watch
@@ -19,16 +19,16 @@ class DFeetApp:
         session_bus_watch = BusWatch(dbus_introspector.SESSION_BUS)    
         system_bus_watch = BusWatch(dbus_introspector.SYSTEM_BUS)
 
-        glade_xml = gtk.glade.XML(_util.get_glade_file(), 'appwindow1')
+        ui = UILoader(UILoader.UI_MAINWINDOW) 
 
-        main_window = glade_xml.get_widget('appwindow1')
+        main_window = ui.get_root_widget()
         main_window.set_icon_name('dfeet-icon')
         main_window.connect('delete-event', self._quit_dfeet)
 
         session_bus_paned = _ui.BusBox(session_bus_watch)
         system_bus_paned = _ui.BusBox(system_bus_watch)    
 
-        notebook = glade_xml.get_widget('display_notebook')
+        notebook = ui.get_widget('display_notebook')
         notebook.append_page(session_bus_paned, gtk.Label('Session Bus'))
         notebook.append_page(system_bus_paned, gtk.Label('System Bus'))
         notebook.show_all()

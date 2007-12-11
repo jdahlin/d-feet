@@ -15,14 +15,13 @@ def get_proc_from_pid(pid):
     return fullpath
 
 # TODO: figure out more robust way to do this
-def get_glade_file():
+def get_ui_dir():
     try:
-        glade_dir = os.environ['DFEET_DATA_PATH']
+        ui_dir = os.environ['DFEET_DATA_PATH']
     except:
-        glade_dir = "../ui"
+        ui_dir = "../ui"
 
-    glade_file = glade_dir + '/dfeet.glade'
-    return glade_file
+    return ui_dir 
 
 def print_method(m):
     def decorator(*args):

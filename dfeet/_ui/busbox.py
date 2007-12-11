@@ -6,6 +6,8 @@ from dfeet import _util
 
 from busnamebox import BusNameBox
 from busnameinfobox import BusNameInfoBox
+from uiloader import UILoader
+
 
 class BusBox(gtk.VBox):
     def __init__(self, watch):
@@ -17,9 +19,10 @@ class BusBox(gtk.VBox):
                         'filter_entry_changed': self.filter_entry_changed_cb
                       } 
 
-        xml = gtk.glade.XML(_util.get_glade_file(), 'sort_and_filter_table1')
-        filter_box = xml.get_widget('sort_and_filter_table1')
-        filter_entry = xml.get_widget('filter_entry1')
+        ui = UILoader(UILoader.UI_FILTERBOX)
+        filter_box = ui.get_root_widget()
+        filter_entry = ui.get_widget('filter_entry1')
+
         self.pack_start(filter_box, False, False)
 
         self.completion = gtk.EntryCompletion()
@@ -46,7 +49,7 @@ class BusBox(gtk.VBox):
         self.paned.set_position(200)
         self.pack_start(self.paned, True, True)
 
-        xml.signal_autoconnect(signal_dict)
+        ui.connect_signals(signal_dict)
         
     def busname_selected_cb(self, busname_box, busname):
         self.busname_info_box.set_busname(busname)

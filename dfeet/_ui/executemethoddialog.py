@@ -2,6 +2,8 @@ import gtk
 
 from dfeet import _util
 
+from uiloader import UILoader
+
 class ExecuteMethodDialog:
     def __init__(self, busname, method):
         signal_dict = { 
@@ -9,18 +11,18 @@ class ExecuteMethodDialog:
                         'execute_dialog_close_cb': self.close_cb
                       } 
 
-        xml = gtk.glade.XML(_util.get_glade_file(), 'executedialog1')
-        self.dialog = xml.get_widget('executedialog1')
-        self.command_label = xml.get_widget('commandlabel1')
-        self.notebook = xml.get_widget('notebook1')
-        self.parameter_textview = xml.get_widget('parametertextview1')
-        self.source_textview = xml.get_widget('sourcetextview1')
+        ui = UILoader(UILoader.UI_EXECUTEDIALOG)
+        self.dialog = ui.get_root_widget()
+        self.command_label = ui.get_widget('commandlabel1')
+        self.notebook = ui.get_widget('notebook1')
+        self.parameter_textview = ui.get_widget('parametertextview1')
+        self.source_textview = ui.get_widget('sourcetextview1')
         self.notebook.set_tab_label_text(self.source_textview.get_parent(), 
                                          'Source')
-        self.prettyprint_textview = xml.get_widget('prettyprinttextview1')
+        self.prettyprint_textview = ui.get_widget('prettyprinttextview1')
         self.notebook.set_tab_label_text(self.prettyprint_textview.get_parent(), 
                                          'Pretty Print')
-        xml.signal_autoconnect(signal_dict)
+        ui.connect_signals(signal_dict)
 
         self.busname = busname
         self.method = method

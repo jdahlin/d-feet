@@ -1,11 +1,11 @@
 import gobject 
 import gtk
-import gtk.glade
 
 from dfeet import _util
 from dfeet.introspect_data import IntrospectData, Method, Signal
 
 from executemethoddialog import ExecuteMethodDialog
+from uiloader import UILoader
 
 class BusNameInfoBox(gtk.VBox):
     def __init__(self):
@@ -13,12 +13,12 @@ class BusNameInfoBox(gtk.VBox):
 
         self.busname = None
 
-        xml = gtk.glade.XML(_util.get_glade_file(), 'info_table1')
-        info_table = xml.get_widget('info_table1')
-        self.name_label = xml.get_widget('name_label1')
-        self.unique_name_label = xml.get_widget('unique_name_label1')
-        self.process_label = xml.get_widget('process_label1')
-        self.introspection_box = xml.get_widget('introspect_box1')
+        ui = UILoader(UILoader.UI_INTROSPECTVIEW) 
+        info_table = ui.get_root_widget()
+        self.name_label = ui.get_widget('name_label1')
+        self.unique_name_label = ui.get_widget('unique_name_label1')
+        self.process_label = ui.get_widget('process_label1')
+        self.introspection_box = ui.get_widget('introspect_box1')
 
         self.introspect_tree_view = gtk.TreeView()
         renderer = gtk.CellRendererText()
