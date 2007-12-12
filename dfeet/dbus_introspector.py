@@ -1,4 +1,5 @@
 import dbus
+import dbus.connection
 import dbus.mainloop.glib
 import gobject
 import gtk
@@ -239,7 +240,7 @@ class BusWatch(gtk.GenericTreeModel):
         else:
             if not address:
                 raise BusAddressError(address)
-            self.bus = dbus.Connection(address)
+            self.bus = dbus.connection.Connection(address)
             if not self.bus:
                 raise BusAddressError(address)
 

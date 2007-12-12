@@ -15,7 +15,7 @@
             <property name="label" translatable="yes">Connect to _Other Bus...</property>
             <property name="short_label" translatable="yes">Bus...</property>
             <property name="tooltip" translatable="yes">Add a bus tab using an address</property>
-            <property name="stock_id">gtk-add</property>
+            <property name="stock_id">gtk-connect</property>
             <signal handler="add_bus_address" name="activate"/>
           </object>
         </child>

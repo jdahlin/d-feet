@@ -5,12 +5,13 @@ from dfeet import _util
 class UILoader:
     instance = None
     
-    UI_COUNT = 4
+    UI_COUNT = 5 
 
     (UI_MAINWINDOW,
      UI_FILTERBOX,
      UI_INTROSPECTVIEW,
-     UI_EXECUTEDIALOG
+     UI_EXECUTEDIALOG,
+     UI_ADDCONNECTIONDIALOG
     ) = range(UI_COUNT)
 
     # {ui_id: ((files,...), root widget)}
@@ -21,7 +22,9 @@ class UILoader:
                UI_INTROSPECTVIEW : (('introspectview.ui',),
                                     'introspectview_table1'),
                UI_EXECUTEDIALOG  : (('executedialog.ui',),
-                                    'executedialog1')
+                                    'executedialog1'),
+               UI_ADDCONNECTIONDIALOG  : (('addconnectiondialog.ui',),
+                                          'add_connection_dialog1')
               }
 
     def __init__(self, ui):

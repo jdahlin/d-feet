@@ -9,6 +9,7 @@ import dbus_introspector
 from dbus_introspector import BusWatch
 from settings import Settings
 from _ui.uiloader import UILoader
+from _ui.addconnectiondialog import AddConnectionDialog
 
 class DFeetApp:
     def __init__(self):
@@ -16,23 +17,25 @@ class DFeetApp:
                        'add_system_bus': self.add_system_bus_cb,
                        'add_bus_address': self.add_bus_address_cb}
 
+        self.ICON_SIZE_CLOSE_BUTTON = gtk.icon_size_register('ICON_SIZE_CLOSE_BUTTON', 14, 14)
+
         settings = Settings.get_instance()
 
         ui = UILoader(UILoader.UI_MAINWINDOW) 
 
-        main_window = ui.get_root_widget()
-        main_window.set_icon_name('dfeet-icon')
-        main_window.connect('delete-event', self._quit_dfeet)
+        self.main_window = ui.get_root_widget()
+        self.main_window.set_icon_name('dfeet-icon')
+        self.main_window.connect('delete-event', self._quit_dfeet)
 
         self.notebook = ui.get_widget('display_notebook')
         self.notebook.show_all()
 
-        main_window.set_default_size(int(settings.general['windowwidth']), 
+        self.main_window.set_default_size(int(settings.general['windowwidth']), 
                                  int(settings.general['windowheight']))
 
         self._load_tabs(settings)
 
-        main_window.show()
+        self.main_window.show()
 
         ui.connect_signals(signal_dict)
 
@@ -53,7 +56,7 @@ class DFeetApp:
         hbox.pack_start(gtk.Label(name), True, True)
         close_btn = gtk.Button()
         img = gtk.Image()
-        img.set_from_stock(gtk.STOCK_CLOSE, gtk.ICON_SIZE_BUTTON)
+        img.set_from_stock(gtk.STOCK_CLOSE, self.ICON_SIZE_CLOSE_BUTTON)
         img.show()
         close_btn.set_image(img)
         close_btn.set_relief(gtk.RELIEF_NONE)
@@ -73,6 +76,12 @@ class DFeetApp:
         if bus_type == dbus_introspector.SESSION_BUS or bus_type == dbus_introspector.SYSTEM_BUS:
             bus_watch = BusWatch(bus_type)
             self._add_bus_tab(bus_watch)
+        else:
+            try:
+                bus_watch = BusWatch(None, address=address)
+                self._add_bus_tab(bus_watch)
+            except Exception, e:
+                print e
 
     def add_session_bus_cb(self, action):
         self.add_bus(dbus_introspector.SESSION_BUS)
@@ -81,7 +90,18 @@ class DFeetApp:
         self.add_bus(dbus_introspector.SYSTEM_BUS)
 
     def add_bus_address_cb(self, action):
-        pass #TODO: pop up a dialog to create arbitrary connections
+        dialog = AddConnectionDialog(self.main_window)
+        result = dialog.run()
+        if result == 1:
+            bus_address = dialog.get_address()
+            if bus_address == 'Session Bus':
+                self.add_bus(dbus_introspector.SESSION_BUS)
+            elif bus_address == 'System Bus':
+                self.add_bus(dbus_introspector.SYSTEM_BUS)
+            else:
+                self.add_bus(address = bus_address)
+
+        dialog.destroy()
 
     def _quit_dfeet(self, main_window, event):
         settings = Settings.get_instance()
