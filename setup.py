@@ -5,7 +5,7 @@ from subprocess import *
 import os
 import glob
 
-DFEET_VERSION='0.1.5'
+DFEET_VERSION='0.1.6'
 
 #Create an array with all the locale filenames
 I18NFILES = []
