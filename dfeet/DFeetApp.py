@@ -6,16 +6,21 @@ import _ui
 import _util
 
 import dbus_introspector
+import introspect_data
+
 from dbus_introspector import BusWatch
 from settings import Settings
 from _ui.uiloader import UILoader
 from _ui.addconnectiondialog import AddConnectionDialog
+from _ui.executemethoddialog import ExecuteMethodDialog
+
 
 class DFeetApp:
     def __init__(self):
         signal_dict = {'add_session_bus': self.add_session_bus_cb,
                        'add_system_bus': self.add_system_bus_cb,
-                       'add_bus_address': self.add_bus_address_cb}
+                       'add_bus_address': self.add_bus_address_cb,
+                       'execute_method': self.execute_current_method_cb}
 
         self.ICON_SIZE_CLOSE_BUTTON = gtk.icon_size_register('ICON_SIZE_CLOSE_BUTTON', 14, 14)
 
@@ -29,6 +34,8 @@ class DFeetApp:
 
         self.notebook = ui.get_widget('display_notebook')
         self.notebook.show_all()
+
+        self.execute_method_action = ui.get_widget('execute_method')
 
         self.main_window.set_default_size(int(settings.general['windowwidth']), 
                                  int(settings.general['windowheight']))
@@ -51,6 +58,8 @@ class DFeetApp:
     def _add_bus_tab(self, bus_watch):
         name = bus_watch.get_bus_name()
         bus_paned = _ui.BusBox(bus_watch)
+        bus_paned.connect('introspectnode-selected', 
+                          self.introspect_node_selected_cb)
         bus_paned.show_all()
         hbox = gtk.HBox()
         hbox.pack_start(gtk.Label(name), True, True)
@@ -67,6 +76,21 @@ class DFeetApp:
         p = self.notebook.append_page(bus_paned, hbox)
         self.notebook.set_current_page(p)
         self.notebook.set_tab_reorderable(bus_paned, True)
+
+    def introspect_node_selected_cb(self, widget, node):
+        if isinstance(node, introspect_data.Method):
+            self.execute_method_action.set_sensitive(True)
+        else:
+            self.execute_method_action.set_sensitive(False)
+            
+    def execute_current_method_cb(self, action):
+        page = self.notebook.get_current_page()
+        if page >= 0:
+            busbox = self.notebook.get_nth_page(page)
+            node = busbox.get_selected_introspect_node()
+            busname = busbox.get_selected_busname()
+            dialog = ExecuteMethodDialog(busname, node)
+            dialog.run()
 
     def close_tab_cb(self, button, child):
         n = self.notebook.page_num(child)

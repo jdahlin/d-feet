@@ -30,9 +30,7 @@
             </child>
             <child>
               <object class="GtkComboBoxEntry" id="address_comboentry1">
-                <property name="items">Session Bus
-System Bus</property>
-                <property name="text_column">0</property>
+                <property name="items">Session Bus</property>
                 <property name="visible">True</property>
               </object>
               <packing>

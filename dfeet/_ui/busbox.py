@@ -9,6 +9,11 @@ from busnameinfobox import BusNameInfoBox
 from uiloader import UILoader
 
 class BusBox(gtk.VBox):
+    __gsignals__ =  {
+        'introspectnode-selected': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                                   (gobject.TYPE_PYOBJECT,))
+    }
+
     def __init__(self, watch):
         super(BusBox, self).__init__()
 
@@ -44,7 +49,9 @@ class BusBox(gtk.VBox):
         self.paned = gtk.HPaned()
         self.busname_box = BusNameBox(watch)
         self.busname_info_box = BusNameInfoBox()
+
         self.busname_box.connect('busname-selected', self.busname_selected_cb)
+        self.busname_info_box.connect('selected', self.busname_info_selected_cb)
 
         self.paned.pack1(self.busname_box)
         self.paned.pack2(self.busname_info_box)
@@ -55,6 +62,15 @@ class BusBox(gtk.VBox):
         
     def busname_selected_cb(self, busname_box, busname):
         self.busname_info_box.set_busname(busname)
+
+    def busname_info_selected_cb(self, busname_info_box, node):
+        self.emit('introspectnode-selected', node)
+
+    def get_selected_introspect_node(self):
+        return self.busname_info_box.get_selected_node()
+
+    def get_selected_busname(self):
+        return self.busname_box.get_selected_busname()
 
     def filter_entry_changed_cb(self, entry, button):
         value = entry.get_text()

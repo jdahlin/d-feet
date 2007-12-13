@@ -167,6 +167,9 @@ class Node:
         if child_path:
             child._row_changed(child_path)
 
+    def get_icon_name(self):
+        return None 
+
     def to_markup_str(self):
         return gobject.markup_escape_text(str(self))
 
@@ -218,6 +221,9 @@ class Method(Node):
             result += '<span foreground="#FF00FF">)</span>'
 
         return result
+
+    def get_icon_name(self):
+        return 'gtk-execute'
 
     def __str__(self):
         result = self.method + '('
@@ -419,12 +425,14 @@ class ObjectPathLabel(Node):
         return self._label
 
 class IntrospectData(gtk.GenericTreeModel):
-    NUM_COL = 2 
+    NUM_COL = 3 
 
     (SUBTREE_COL, 
-     DISPLAY_COL) = range(NUM_COL)
+     DISPLAY_COL,
+     ICON_NAME_COL) = range(NUM_COL)
 
     COL_TYPES = (gobject.TYPE_PYOBJECT,
+                 gobject.TYPE_STRING,
                  gobject.TYPE_STRING)
 
     """
@@ -492,6 +500,8 @@ class IntrospectData(gtk.GenericTreeModel):
             return rowref
         elif column == self.DISPLAY_COL:
             return rowref.to_markup_str()
+        elif column == self.ICON_NAME_COL:
+            return rowref.get_icon_name()
         else:
             raise InvalidColumnError(column) 
 

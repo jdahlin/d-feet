@@ -29,12 +29,17 @@ class BusNameBox(gtk.VBox):
         return self.tree_view._is_iter_equal(completion.get_model(),
                                             iter, key)
 
-    def busname_selected_cb(self, treeview):
-        (model, iter) = treeview.get_selection().get_selected()
+    def get_selected_busname(self):
+        (model, iter) = self.tree_view.get_selection().get_selected()
         if not iter:
-            return
+            return None
 
         busname = model.get_value(iter, BusWatch.BUSNAME_OBJ_COL)
+
+        return busname
+
+    def busname_selected_cb(self, treeview):
+        busname = self.get_selected_busname()
         self.emit('busname-selected', busname)
 
     def set_filter_string(self, value):

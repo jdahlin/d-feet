@@ -1,5 +1,6 @@
 import gobject 
 import gtk
+import pango 
 
 from dfeet import _util
 from dfeet.introspect_data import IntrospectData, Method, Signal
@@ -8,6 +9,11 @@ from executemethoddialog import ExecuteMethodDialog
 from uiloader import UILoader
 
 class BusNameInfoBox(gtk.VBox):
+    __gsignals__ =  {
+        'selected': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                     (gobject.TYPE_PYOBJECT,))
+    }
+
     def __init__(self):
         super(BusNameInfoBox, self).__init__()
 
@@ -21,17 +27,30 @@ class BusNameInfoBox(gtk.VBox):
         self.introspection_box = ui.get_widget('introspect_box1')
 
         self.introspect_tree_view = gtk.TreeView()
-        renderer = gtk.CellRendererText()
+
+        button_renderer = gtk.CellRendererPixbuf()
+        text_renderer = gtk.CellRendererText()
         column = gtk.TreeViewColumn("Introspection Data", 
-                                    renderer, markup=1)
-        column.set_cell_data_func(renderer, 
-                                  self.cell_data_handler, 
+                                    None)
+
+        column.pack_start(button_renderer, False)
+        column.pack_start(text_renderer, True)
+
+        column.add_attribute(button_renderer, 'icon-name', 
+                             IntrospectData.ICON_NAME_COL)
+        column.add_attribute(text_renderer, 'markup', 
+                             IntrospectData.DISPLAY_COL)
+
+        column.set_cell_data_func(text_renderer, 
+                                  self.text_cell_data_handler, 
                                   self.introspect_tree_view)
 
         self.introspect_tree_view.connect('row-collapsed', 
                                           self.row_collapsed_handler)
         self.introspect_tree_view.connect('row-expanded', 
                                           self.row_expanded_handler)
+        self.introspect_tree_view.connect('cursor-changed',
+                                          self.cursor_changed_handler)
 
         self.introspect_tree_view.append_column(column) 
         
@@ -55,7 +74,6 @@ class BusNameInfoBox(gtk.VBox):
 
         node = model.get_value(iter, IntrospectData.SUBTREE_COL)
 
-        # TODO: Figure out what to do with signals
         if isinstance(node, Method):
             dialog = ExecuteMethodDialog(self.busname, node)
             dialog.run()
@@ -75,7 +93,20 @@ class BusNameInfoBox(gtk.VBox):
         node = model.get(iter, model.SUBTREE_COL)[0]
         node.set_expanded(True)
 
-    def cell_data_handler(self, column, cell, model, iter, treeview):
+    def cursor_changed_handler(self, treeview):
+        node = self.get_selected_node()
+        self.emit('selected', node)
+
+    def get_selected_node(self):
+        selection = self.introspect_tree_view.get_selection()
+        model, iter = selection.get_selected()
+        if not iter:
+            return None 
+             
+        node = model.get(iter, model.SUBTREE_COL)[0]
+        return node
+
+    def text_cell_data_handler(self, column, cell, model, iter, treeview):
         node = model.get(iter, model.SUBTREE_COL)[0]
         if node.is_expanded():
             path = model.get_path(iter)

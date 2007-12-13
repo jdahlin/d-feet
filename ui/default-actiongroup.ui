@@ -37,6 +37,19 @@
             <signal handler="add_system_bus" name="activate"/>
           </object>
         </child>
+        <child>
+          <object class="GtkAction" id="execute_method">
+            <property name="name">execute_method</property>
+            <property name="label" translatable="yes">E_xecute Method</property>
+            <property name="short_label" translatable="yes">Execute</property>
+            <property name="tooltip" translatable="yes">Execute the selected method</property>
+            <property name="sensitive">False</property>
+            <property name="enabled">False</property>
+            <property name="stock_id">gtk-execute</property>
+            <signal handler="execute_method" name="activate"/>
+          </object>
+        </child>
+
       </object>
     </child>
     <ui>
@@ -58,6 +71,8 @@
           </menu>
          -->
         </toolitem>
+        <separator/>
+        <toolitem name="ExecuteMethod" action="execute_method"/>
       </toolbar>
     </ui>
   </object>
