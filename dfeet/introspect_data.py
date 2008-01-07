@@ -16,6 +16,11 @@ class Node:
         self.sig_props = 'foreground="#2E8B57" size="smaller"'
         self.name_props = 'foreground="#000000" size="smaller"'
 
+    def on_selected(self, busname):
+        # do nothing here but this is called whenever
+        # a node is selected in the model so can be 
+        # overridden (see Property class for example)
+        pass
 
     def mark_tree_invalid(self):
         self.valid = False
@@ -206,16 +211,14 @@ class Node:
         # get rid of the last comma and space before returning 
         return result[0:-2]
 
-class Method(Node):
-    # tree path = (0,x,0,y,0,z)
-    def __init__(self, model, parent, method, insig, outsig):
-        Node.__init__(self, model, parent)
 
-        self.method = method
-        self.insig = insig
-        self.outsig = outsig
-
-    def dbus_call(self, bus, name, *args):
+""" 
+Leaf nodes are in a special class because they have special functionality
+The LeafNode class is a helper class which provide common functionality that 
+is only of interest to leaf nodes
+"""
+class LeafNode(Node):
+    def get_proxy_interface(self, bus, name):
         # it is not strictly necisary to traverse the tree
         # but it future proofs things just in case we move
         # or remove node types
@@ -237,6 +240,20 @@ class Method(Node):
 
         proxy = bus.get_object(name, obj_path)
         iface = dbus.Interface(proxy, iface)
+
+        return (proxy, iface)  
+
+class Method(LeafNode):
+    # tree path = (0,x,0,y,0,z)
+    def __init__(self, model, parent, method, insig, outsig):
+        LeafNode.__init__(self, model, parent)
+
+        self.method = method
+        self.insig = insig
+        self.outsig = outsig
+
+    def dbus_call(self, bus, name, *args):
+        (proxy, iface) = self.get_proxy_interface(bus, name)
         func = getattr(iface, self.method)
         
         return func(*args)
@@ -268,13 +285,13 @@ class Method(Node):
             
         return result
 
-class Signal(Node):
+class Signal(LeafNode):
     # tree path = (0,x,0,y,1,z)
     def __init__(self, model, parent, signal, insig):
         self.signal = signal
         self.insig = insig
 
-        Node.__init__(self, model, parent)
+        LeafNode.__init__(self, model, parent)
 
     def dbus_call(self, bus, name, *args):
         # for testing out signals
@@ -299,14 +316,40 @@ class Signal(Node):
 
         return result
 
-class Property(Node):
+class Property(LeafNode):
     # tree path = (0,x,0,y,2,z)
     def __init__(self, model, parent, property, sig, access):
         self.property = property
         self.sig = sig
         self.access = access
+        self.value = None
 
-        Node.__init__(self, model, parent)
+        LeafNode.__init__(self, model, parent)
+
+    def on_selected(self, busname):
+        # when selected use the properties interface
+        # to read a value if this is a read or
+        # readwrite property
+        if self.access.startswith('read'):
+            bus = busname.get_bus()
+            (proxy, iface) = self.get_proxy_interface(bus, busname.get_display_name())
+
+            proxy.Get(iface.dbus_interface, 
+                      self.property, 
+                      dbus_interface='org.freedesktop.DBus.Properties',
+                      reply_handler=self.property_get_handler,
+                      error_handler=self.property_get_error_handler)
+
+
+            
+    def property_get_handler(self, value):
+        self.value = value
+
+        path =  tuple(self._calculate_path())
+        self._row_changed(path)
+
+    def property_get_error_handler(self, e):
+        print e
 
     def dbus_call(self, bus, name, *args):
         # for testing out properties
@@ -329,10 +372,15 @@ class Property(Node):
         self.name_props = ''
         result = self._sig_list_to_markup(self.sig)
 
+        if self.value:
+            result += ' = ' + str(self.value)
+
         return result
 
     def __str__(self):
         result = self._sig_list_to_string(self.sig)
+        if self.value:
+            result += ' = ' + str(self.value)
 
         return result
 

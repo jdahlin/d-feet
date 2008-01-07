@@ -95,6 +95,8 @@ class BusNameInfoBox(gtk.VBox):
 
     def cursor_changed_handler(self, treeview):
         node = self.get_selected_node()
+        node.on_selected(self.busname)
+
         self.emit('selected', node)
 
     def get_selected_node(self):
