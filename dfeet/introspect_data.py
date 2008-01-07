@@ -325,7 +325,7 @@ class Property(Node):
         return icon
 
     def to_markup_str(self):
-        self.sig_props = 'foreground="#2E8B57"'
+        self.sig_props = 'foreground="#2E8B57" size="smaller"'
         self.name_props = ''
         result = self._sig_list_to_markup(self.sig)
 
