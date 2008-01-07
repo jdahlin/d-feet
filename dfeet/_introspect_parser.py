@@ -31,7 +31,7 @@ class _Parser(object):
                  'in_iface', 
                  'in_method', 
                  'in_signal',
-                 'property',
+                 'in_property',
                  'in_sig',
                  'out_sig', 
                  'node_level',
@@ -41,7 +41,7 @@ class _Parser(object):
         self.in_iface = ''
         self.in_method = ''
         self.in_signal = ''
-        self.property = ''
+        self.in_property = ''
         self.in_sig = ''
         self.out_sig = ''
         self.node_level = 0
