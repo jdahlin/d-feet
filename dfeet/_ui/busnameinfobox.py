@@ -145,7 +145,7 @@ class BusNameInfoBox(gtk.VBox):
             process_path = self.busname.get_process_path()
             process_path_str = ""
             if not process_path:
-                process_path_str = 'Unkown or Remote: This process can not be found and may be remote'
+                process_path_str = 'Unknown or Remote: This process can not be found and may be remote'
             else:
                 process_path_str = ' '.join(process_path)
 
