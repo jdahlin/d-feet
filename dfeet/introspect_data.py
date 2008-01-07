@@ -223,7 +223,7 @@ class Method(Node):
         return result
 
     def get_icon_name(self):
-        return 'gtk-execute'
+        return 'dfeet-method'
 
     def __str__(self):
         result = self.method + '('
@@ -247,6 +247,9 @@ class Signal(Node):
         # this actually isn't going to work since I
         # can't spoof the sender unless I can own the name
         pass
+
+    def get_icon_name(self):
+        return 'dfeet-signal'
 
     def to_markup_str(self):
         sig_props = 'foreground="#2E8B57" size="smaller"'
@@ -275,6 +278,9 @@ class Property(Node):
         # this is not implemented yet
         pass
 
+    def get_icon_name(self):
+        return 'dfeet-property'
+
     def __str__(self):
         result = self.property + '('
         result += dbus_utils.sig_to_string(self.insig) + ')'
@@ -294,6 +300,10 @@ class MethodLabel(Node):
         for method_name in method_list:
             method = Method(self.model, self, method_name, data[method_name][0], data[method_name][1])
             self._add_child(method, None)
+
+    def get_icon_name(self):
+        return 'dfeet-method-category'
+
 
     def to_markup_str(self):
         return '<b>' + gobject.markup_escape_text(self._label) + '</b>'
@@ -315,6 +325,9 @@ class SignalLabel(Node):
             signal = Signal(self.model, self, signal_name, data[signal_name])
             self._add_child(signal, None)
 
+    def get_icon_name(self):
+        return 'dfeet-signal-category'
+
     def to_markup_str(self):
         return '<b>' + gobject.markup_escape_text(self._label) + '</b>' 
 
@@ -334,6 +347,9 @@ class PropertyLabel(Node):
         for property_name in property_list:
             property = Property(self.model, self, property_name, data[property_name])
             self._add_child(property, None)
+
+    def get_icon_name(self):
+        return 'dfeet-property-category'
 
     def to_markup_str(self):
         return '<b>' + gobject.markup_escape_text(self._label) + '</b>'
@@ -400,6 +416,9 @@ class ObjectPath(Node):
 
         interfaces = InterfaceLabel(self.model, self)
         self._add_child(interfaces, iface_data)
+
+    def get_icon_name(self):
+        return 'dfeet-object'
 
     def __str__(self):
         return self.path

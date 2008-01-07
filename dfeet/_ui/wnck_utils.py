@@ -19,7 +19,7 @@ class IconTable:
         self.app_map = {}
 
         icon_theme = gtk.icon_theme_get_default()
-        self.default_icon = icon_theme.load_icon('icon-service', 16, 0)
+        self.default_icon = icon_theme.load_icon('dfeet-icon-default-service', 16, 0)
 
         if has_libwnck:
             screen = wnck.screen_get_default()
