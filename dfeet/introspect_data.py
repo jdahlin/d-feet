@@ -12,6 +12,11 @@ class Node:
         self.expanded = False
         self.valid = True
 
+        # default markup for signatures
+        self.sig_props = 'foreground="#2E8B57" size="smaller"'
+        self.name_props = 'foreground="#000000" size="smaller"'
+
+
     def mark_tree_invalid(self):
         self.valid = False
         for child in self.child_list:
@@ -173,6 +178,34 @@ class Node:
     def to_markup_str(self):
         return gobject.markup_escape_text(str(self))
 
+    def _sig_list_to_string(self, sig_list):
+        result = ''
+
+        for sig in sig_list:
+            if sig == []: 
+                print sig_list
+                return ''
+            result += sig['type']
+            if sig['name']:
+                result += ' ' + sig['name']
+
+            result += ', '
+
+        # get rid of the last comma and space before returning 
+        return result[0:-2]
+        
+    def _sig_list_to_markup(self, sig_list):
+        result = ''
+
+        for sig in sig_list:
+            result += dbus_utils.sig_to_markup(sig['type'], self.sig_props)
+            if sig['name']:
+                result += ' <span ' + self.name_props + '>' + sig['name'] + '</span>'
+            result += ', '
+
+        # get rid of the last comma and space before returning 
+        return result[0:-2]
+
 class Method(Node):
     # tree path = (0,x,0,y,0,z)
     def __init__(self, model, parent, method, insig, outsig):
@@ -210,14 +243,15 @@ class Method(Node):
 
     def to_markup_str(self):
         sig_props = 'foreground="#2E8B57" size="smaller"'
+        name_props = ''
         result = self.method + '<span foreground="#FF00FF">(</span>'
-        result += dbus_utils.sig_to_markup(self.insig, sig_props)
+        result += self._sig_list_to_markup(self.insig)
         result += '<span foreground="#FF00FF">)</span>'
 
         if self.outsig:
             result += '<span foreground="#A52A2A">' + u' \u27A1 ' + '</span>'
             result += '<span foreground="#FF00FF">(</span>' 
-            result += dbus_utils.sig_to_markup(self.outsig, sig_props)
+            result += self._sig_list_to_markup(self.outsig)
             result += '<span foreground="#FF00FF">)</span>'
 
         return result
@@ -227,10 +261,10 @@ class Method(Node):
 
     def __str__(self):
         result = self.method + '('
-        result += dbus_utils.sig_to_string(self.insig) + ')'
+        result += self._sig_list_to_string(self.insig) + ')'
         
         if self.outsig:
-            result += u' \u27A1 (' +  dbus_utils.sig_to_string(self.outsig) + ')'
+            result += u' \u27A1 (' +  self._sig_list_to_string(self.outsig) + ')'
             
         return result
 
@@ -254,22 +288,23 @@ class Signal(Node):
     def to_markup_str(self):
         sig_props = 'foreground="#2E8B57" size="smaller"'
         result = self.signal + '<span foreground="#FF00FF">(</span>'
-        result += dbus_utils.sig_to_markup(self.insig, sig_props)
+        result += self._sig_list_to_markup(self.insig)
         result += '<span foreground="#FF00FF">)</span>'
 
         return result
 
     def __str__(self):
         result = self.signal + '('
-        result += dbus_utils.sig_to_string(self.insig) + ')'
+        result += self._sig_list_to_string(self.insig) + ')'
 
         return result
 
 class Property(Node):
     # tree path = (0,x,0,y,2,z)
-    def __init__(self, model, parent, property, insig):
+    def __init__(self, model, parent, property, sig, access):
         self.property = property
-        self.insig = insig
+        self.sig = sig
+        self.access = access
 
         Node.__init__(self, model, parent)
 
@@ -279,11 +314,25 @@ class Property(Node):
         pass
 
     def get_icon_name(self):
-        return 'dfeet-property'
+        icon = 'dfeet-property'
+        if self.access == 'read':
+            icon = 'dfeet-read-property'
+        elif self.access == 'write':
+            icon = 'dfeet-write-property'
+        elif self.access == 'readwrite':
+            icon = 'dfeet-readwrite-property'
+
+        return icon
+
+    def to_markup_str(self):
+        self.sig_props = 'foreground="#2E8B57"'
+        self.name_props = ''
+        result = self._sig_list_to_markup(self.sig)
+
+        return result
 
     def __str__(self):
-        result = self.property + '('
-        result += dbus_utils.sig_to_string(self.insig) + ')'
+        result = self._sig_list_to_string(self.sig)
 
         return result
 
@@ -322,7 +371,7 @@ class SignalLabel(Node):
         signal_list = data.keys()
         signal_list.sort()
         for signal_name in signal_list:
-            signal = Signal(self.model, self, signal_name, data[signal_name])
+            signal = Signal(self.model, self, signal_name, data[signal_name][0])
             self._add_child(signal, None)
 
     def get_icon_name(self):
@@ -345,7 +394,7 @@ class PropertyLabel(Node):
         property_list = data.keys()
         property_list.sort()
         for property_name in property_list:
-            property = Property(self.model, self, property_name, data[property_name])
+            property = Property(self.model, self, property_name, data[property_name][0], data[property_name][1])
             self._add_child(property, None)
 
     def get_icon_name(self):

@@ -32,6 +32,7 @@ class _Parser(object):
                  'in_method', 
                  'in_signal',
                  'in_property',
+                 'property_access',
                  'in_sig',
                  'out_sig', 
                  'node_level',
@@ -42,8 +43,9 @@ class _Parser(object):
         self.in_method = ''
         self.in_signal = ''
         self.in_property = ''
-        self.in_sig = ''
-        self.out_sig = ''
+        self.property_access = ''
+        self.in_sig = [] 
+        self.out_sig = []
         self.node_level = 0
 
     def parse(self, data):
@@ -66,19 +68,27 @@ class _Parser(object):
             if (not self.in_method and name == 'method'):
                 self.in_method = attributes['name']
             elif (self.in_method and name == 'arg'):
+                arg_type = attributes['type']
+                arg_name = attributes.get('name', None)
                 if attributes.get('direction', 'in') == 'in':
-                    self.in_sig += attributes['type']
+                    self.in_sig.append({'name': arg_name, 'type': arg_type})
                 if attributes.get('direction', 'out') == 'out':
-                    self.out_sig += attributes['type']
+                    self.out_sig.append({'name': arg_name, 'type': arg_type})
             elif (not self.in_signal and name == 'signal'):
                 self.in_signal = attributes['name']
             elif (self.in_signal and name == 'arg'):
+                arg_type = attributes['type']
+                arg_name = attributes.get('name', None)
+
                 if attributes.get('direction', 'in') == 'in':
-                    self.in_sig += attributes['type']
+                    self.in_sig.append({'name': arg_name, 'type': arg_type})
             elif (not self.in_property and name == 'property'):
-                self.in_property = attributes['name']
-                self.in_sig = attributes['type']
-                self.out_sig = attributes['access']
+                prop_type = attributes['type']
+                prop_name = attributes['name']
+
+                self.in_property = prop_name
+                self.in_sig.append({'name': prop_name, 'type': prop_type})
+                self.property_access = attributes['access']
 
 
     def EndElementHandler(self, name):
@@ -97,8 +107,8 @@ class _Parser(object):
                     self.map['interfaces'][self.in_iface]['methods'][self.in_method] = (self.in_sig, self.out_sig)
 
                 self.in_method = ''
-                self.in_sig = ''
-                self.out_sig = ''
+                self.in_sig = [] 
+                self.out_sig = []
             elif (self.in_signal and name == 'signal'):
                 if not self.map['interfaces'].has_key(self.in_iface):
                     self.map['interfaces'][self.in_iface]={'methods':{}, 'signals':{}, 'properties':{}}
@@ -106,11 +116,11 @@ class _Parser(object):
                 if self.map['interfaces'][self.in_iface]['signals'].has_key(self.in_signal):
                     print "ERROR: Some clever service is trying to be cute and has the same signal name in the same interface"
                 else:
-                    self.map['interfaces'][self.in_iface]['signals'][self.in_signal] = (self.in_sig, self.out_sig)
+                    self.map['interfaces'][self.in_iface]['signals'][self.in_signal] = (self.in_sig,)
 
                 self.in_signal = ''
-                self.in_sig = ''
-                self.out_sig = ''
+                self.in_sig = []
+                self.out_sig = []
             elif (self.in_property and name == 'property'):
                 if not self.map['interfaces'].has_key(self.in_iface):
                     self.map['interfaces'][self.in_iface]={'methods':{}, 'signals':{}, 'properties':{}}
@@ -118,26 +128,17 @@ class _Parser(object):
                 if self.map['interfaces'][self.in_iface]['properties'].has_key(self.in_property):
                     print "ERROR: Some clever service is trying to be cute and has the same property name in the same interface"
                 else:
-                    self.map['interfaces'][self.in_iface]['properties'][self.in_property] = (self.in_sig, self.out_sig)
+                    self.map['interfaces'][self.in_iface]['properties'][self.in_property] = (self.in_sig, self.property_access)
 
                 self.in_property = ''
-                self.in_sig = ''
-                self.out_sig = ''
+                self.in_sig = [] 
+                self.out_sig = []
+                self.property_access = ''
 
 
 def process_introspection_data(data):
-    """Return a dict mapping ``interface.method`` strings to a tupple of 
-    concatenation of all their 'in' parameters and 'out' parameters, and mapping
-    ``interface.signal`` strings to the concatenation of all their
-    parameters.
-
-    Example output::
-
-        {
-            'child_nodes': []
-            'com.example.SignalEmitter.OneString': 's',
-            'com.example.MethodImplementor.OneInt32Argument': 'i',
-        }
+    """Return a structure mapping all of the elements from the introspect data 
+       to python types TODO: document this structure
 
     :Parameters:
         `data` : str
