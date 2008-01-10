@@ -116,7 +116,8 @@
             <property name="visible">True</property>
             <child>
               <object class="GtkButton" id="closebutton1">
-                <property name="label" context="yes" translatable="yes">Close</property>
+                <property name="label" context="yes" translatable="yes">gtk-close</property>
+	        <property name="use_stock">True</property>
                 <property name="visible">True</property>
                 <signal handler="execute_dialog_close_cb" name="clicked"/>
               </object>
@@ -124,7 +125,8 @@
             <child>
               <object class="GtkButton" id="executebutton1">
                 <property name="is_focus">True</property>
-                <property name="label" context="yes" translatable="yes">Execute</property>
+                <property name="use_underline">True</property>
+                <property name="label" context="yes" translatable="yes">_Execute</property>
                 <property name="visible">True</property>
                 <signal handler="execute_dbus_method_cb" name="clicked"/>
               </object>
@@ -132,7 +134,7 @@
                 <property name="position">1</property>
               </packing>
             </child>
-          </object>
+         </object>
           <packing>
             <property name="expand">False</property>
             <property name="pack_type">end</property>
