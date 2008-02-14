@@ -49,7 +49,7 @@ class ExecuteMethodDialog:
                              #        from parameter errors?
             result = str(e) 
 
-        if not result:
+        if result is None:
             result = 'This method did not return anything'
         else:
             result = str(result)
