@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup, find_packages
 from subprocess import *
 import os
 import glob
