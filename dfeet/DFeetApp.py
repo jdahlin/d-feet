@@ -20,7 +20,8 @@ class DFeetApp:
         signal_dict = {'add_session_bus': self.add_session_bus_cb,
                        'add_system_bus': self.add_system_bus_cb,
                        'add_bus_address': self.add_bus_address_cb,
-                       'execute_method': self.execute_current_method_cb}
+                       'execute_method': self.execute_current_method_cb,
+                       'quit': self.quit_cb}
 
         self.ICON_SIZE_CLOSE_BUTTON = gtk.icon_size_register('ICON_SIZE_CLOSE_BUTTON', 14, 14)
 
@@ -126,6 +127,9 @@ class DFeetApp:
                 self.add_bus(address = bus_address)
 
         dialog.destroy()
+
+    def quit_cb(self, action):
+        self._quit_dfeet(self.main_window, None)
 
     def _quit_dfeet(self, main_window, event):
         settings = Settings.get_instance()
