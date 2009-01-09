@@ -4,6 +4,25 @@ from dfeet import _util
 
 from uiloader import UILoader
 
+def unwrap(x):
+    """Hack to unwrap D-Bus values, so that they're easier to read when
+    printed."""
+
+    if isinstance(x, list):
+        return map(unwrap, x)
+
+    if isinstance(x, tuple):
+        return tuple(map(unwrap, x))
+
+    if isinstance(x, dict):
+        return dict([(unwrap(k), unwrap(v)) for k, v in x.iteritems()])
+
+    for t in [unicode, str, long, int, float, bool]:
+        if isinstance(x, t):
+            return t(x)
+
+    return x
+
 class ExecuteMethodDialog:
     def __init__(self, busname, method):
         signal_dict = { 
@@ -51,12 +70,9 @@ class ExecuteMethodDialog:
 
         if result is None:
             result = 'This method did not return anything'
-        else:
-            result = str(result)
 
-        # FIXME: Format results for pretty print
-        self.prettyprint_textview.get_buffer().set_text(result)
-        self.source_textview.get_buffer().set_text(result)
+        self.prettyprint_textview.get_buffer().set_text(str(unwrap(result)))
+        self.source_textview.get_buffer().set_text(str(result))
 
     def run(self):
         self.dialog.run()
