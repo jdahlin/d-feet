@@ -4,6 +4,8 @@ from dfeet import _util
 
 from uiloader import UILoader
 
+from pprint import pformat
+
 def unwrap(x):
     """Hack to unwrap D-Bus values, so that they're easier to read when
     printed."""
@@ -71,7 +73,9 @@ class ExecuteMethodDialog:
         if result is None:
             result = 'This method did not return anything'
 
-        self.prettyprint_textview.get_buffer().set_text(str(unwrap(result)))
+        prettified = pformat(unwrap(result))
+        self.prettyprint_textview.get_buffer().set_text(prettified)
+
         self.source_textview.get_buffer().set_text(str(result))
 
     def run(self):
