@@ -7,5 +7,5 @@ Exec=d-feet
 Icon=dfeet-icon
 Terminal=false
 Type=Application
-Categories=GNOME;GTK;Development;
+Categories=GNOME;GTK;Development;Debugger;
 GenericName[en_CA]=D-Feet D-Bus Debugger
