@@ -1,4 +1,4 @@
-include AUTHORS COPYING 
+include AUTHORS COPYING NEWS 
 recursive-include ui *.png *.ui *.desktop 
 recursive-include icons *.png
 recursive-include locale */LC_MESSAGES/dfeet.mo
