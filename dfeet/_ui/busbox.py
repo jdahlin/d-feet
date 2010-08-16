@@ -55,7 +55,7 @@ class BusBox(gtk.VBox):
 
         self.paned.pack1(self.busname_box)
         self.paned.pack2(self.busname_info_box)
-        self.paned.set_position(200)
+        self.paned.set_position(300)
         self.pack_start(self.paned, True, True)
 
         ui.connect_signals(signal_dict)
