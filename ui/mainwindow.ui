@@ -9,7 +9,7 @@
     <property name="visible">True</property>
     <property name="width_request">300</property>
     <child>
-      <object class="GtkVPaned" id="vpaned1">
+      <object class="GtkVBox" id="main_vbox">
         <property name="visible">True</property>
         <child>
           <object class="GtkFrame" id="frame1">
@@ -47,8 +47,7 @@
             </child>
           </object>
           <packing>
-              <property name="shrink">False</property>
-              <property name="resize">True</property>
+              <property name="expand">True</property>
             </packing>
         </child>
         <child>
@@ -67,8 +66,7 @@
             </child>
           </object>
           <packing>
-            <property name="shrink">False</property>
-            <property name="resize">True</property>
+            <property name="expand">False</property>
           </packing>
         </child>
         <child>
