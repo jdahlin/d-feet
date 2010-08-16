@@ -44,7 +44,6 @@
             <property name="short_label" translatable="yes">Execute</property>
             <property name="tooltip" translatable="yes">Execute the selected method</property>
             <property name="sensitive">False</property>
-            <property name="enabled">False</property>
             <property name="stock_id">gtk-execute</property>
             <signal handler="execute_method" name="activate"/>
           </object>
