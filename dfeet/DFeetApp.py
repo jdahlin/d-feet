@@ -97,6 +97,16 @@ class DFeetApp:
         n = self.notebook.page_num(child)
         self.notebook.remove_page(n)
 
+    def select_or_add_bus(self, address):
+        for i in range(self.notebook.get_n_pages()):
+            page = self.notebook.get_nth_page(i)
+            tab_label = self.notebook.get_tab_label(page)
+            if tab_label.get_children()[0].get_text() == address:
+                self.notebook.set_current_page(i)
+                break
+        else:
+            self.add_bus(address=address)
+
     def add_bus(self, bus_type=None, address=None):
         if bus_type == dbus_introspector.SESSION_BUS or bus_type == dbus_introspector.SYSTEM_BUS:
             bus_watch = BusWatch(bus_type)

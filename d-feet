@@ -19,6 +19,8 @@ parser = optparse.OptionParser(usage="%prog [options] [project-file]")
 
 parser.add_option("-l", "--local-dirs", action="store_true", dest="use_local_dirs",
                 help="Use files from the local directory tree")
+parser.add_option("-a", "--bus-address", action="store", dest="bus_address",
+                help="Bus address to connect to", default=None)
 
 (options, args) = parser.parse_args()
 if options.use_local_dirs:
@@ -45,4 +47,6 @@ import dfeet.DFeetApp as DFeetApp
 
 #Launch the program
 app = DFeetApp.DFeetApp()
+if options.bus_address is not None:
+    app.select_or_add_bus(address=options.bus_address)
 DFeetApp.gtk.main()
